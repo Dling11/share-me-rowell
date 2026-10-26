@@ -27,6 +27,7 @@ class Transport(private val context:Context) : Closeable {
     private val epoch=Model.epochs.next()
     private fun state(change:(ScreenState)->ScreenState){Model.epochs.update(epoch){Model.set(change)}}
     private fun status(message:String){state{it.copy(status=message)}}
+    private fun phase(next:ConnectionPhase){state{it.copy(connection=it.connection.advance(next))}}
     private var claimed=false
     private val guard=Any()
     private var session:Pairing?=null
@@ -74,16 +75,17 @@ class Transport(private val context:Context) : Closeable {
             socket.soTimeout=600000
             val op=request.optString("op")
             val peer=request.optString("name","Nearby device").take(40)
+            state{it.copy(connection=PeerConnection.begin(peer,ConnectionPhase.APPROVAL),current="",done=0,total=0)}
             if(op=="push"&&pair.mode=="receive"){
                 val files=Wire.files(request)
-                if(!approve(peer,files,false)){Wire.write(output,reject("Transfer declined."));return}
+                if(!approve(peer,files,false)){phase(ConnectionPhase.DECLINED);status("Transfer declined.");Wire.write(output,reject("Transfer declined."));return}
                 receive(input,output,files)
             }else if(op=="pull"&&pair.mode=="send"){
-                if(!approve(peer,sources.map{it.meta},true)){Wire.write(output,reject("Transfer declined."));return}
+                if(!approve(peer,sources.map{it.meta},true)){phase(ConnectionPhase.DECLINED);status("Transfer declined.");Wire.write(output,reject("Transfer declined."));return}
                 Wire.write(output,JSONObject().put("ok",true).put("sender",Model.deviceName).put("files",JSONArray(sources.map{it.meta.json()})))
-                val response=Wire.read(input);Wire.success(response);send(input,output,sources,response.getJSONArray("offsets"))
-            }else Wire.write(output,reject("Choose Send on one device and Receive on the other."))
-        }catch(e:Exception){if(!stopped)status(e.message?:"Connection interrupted. Scan again to resume.")}
+                phase(ConnectionPhase.WAITING);val response=Wire.read(input);Wire.success(response);send(input,output,sources,response.getJSONArray("offsets"))
+            }else{phase(ConnectionPhase.FAILED);Wire.write(output,reject("Choose Send on one device and Receive on the other."))}
+        }catch(e:Exception){if(!stopped&&owner){phase(if(e.message.orEmpty().contains("declined",true))ConnectionPhase.DECLINED else ConnectionPhase.FAILED);status(e.message?:"Connection interrupted. Scan again to resume.")}}
         finally{socket.close();connections.remove(socket);if(owner){synchronized(guard){claimed=false};state{it.copy(busy=false,approval=null)}}}
     }
     fun connect(pair:Pairing,files:List<Prepared>,network:Network?=null) {
@@ -93,7 +95,7 @@ class Transport(private val context:Context) : Closeable {
             var socket:SSLSocket?=null
             var rawClient:Socket?=null
             try{
-                state{it.copy(busy=true,status="Connecting to ${pair.name}…")}
+                state{it.copy(busy=true,status="Connecting to ${pair.name}…",connection=PeerConnection.begin(pair.name),current="",done=0,total=0)}
                 val trust=object:X509TrustManager {
                     override fun getAcceptedIssuers():Array<X509Certificate> = emptyArray()
                     override fun checkClientTrusted(chain:Array<X509Certificate>,authType:String):Unit = throw java.security.cert.CertificateException("Client certificates are not used.")
@@ -105,6 +107,7 @@ class Transport(private val context:Context) : Closeable {
                 val channel=socket?:throw IOException("Could not connect. Use the same Wi-Fi/hotspot and check the PC firewall.",last)
                 connections+=channel
                 val input=BufferedInputStream(channel.inputStream,256*1024);val output=BufferedOutputStream(channel.outputStream,256*1024)
+                phase(ConnectionPhase.WAITING)
                 if(pair.mode=="receive"){
                     check(files.isNotEmpty()){ "Choose files in Send first." }
                     Wire.write(output,JSONObject().put("v",1).put("op","push").put("code",pair.code).put("name",Model.deviceName).put("files",JSONArray(files.map{it.meta.json()})))
@@ -114,41 +117,42 @@ class Transport(private val context:Context) : Closeable {
                     Wire.write(output,JSONObject().put("v",1).put("op","pull").put("code",pair.code).put("name",Model.deviceName))
                     status("Waiting for ${pair.name}…")
                     val offer=Wire.read(input);Wire.success(offer);val incoming=Wire.files(offer)
-                    if(!approve(pair.name,incoming,false)){Wire.write(output,reject("Transfer declined."));return@execute}
+                    if(!approve(pair.name,incoming,false)){phase(ConnectionPhase.DECLINED);status("Transfer declined.");Wire.write(output,reject("Transfer declined."));return@execute}
                     receive(input,output,incoming)
                 }
-            }catch(e:Exception){if(!stopped)status(e.message?:"Transfer interrupted. Scan again to resume.")}
+            }catch(e:Exception){if(!stopped){phase(if(e.message.orEmpty().contains("declined",true))ConnectionPhase.DECLINED else ConnectionPhase.FAILED);status(e.message?:"Transfer interrupted. Scan again to resume.")}}
             finally{socket?.let{connections.remove(it);runCatching{it.close()}};rawClient?.let{connections.remove(it);runCatching{it.close()}};synchronized(guard){claimed=false};state{it.copy(busy=false,approval=null)}}
         }}catch(_:java.util.concurrent.RejectedExecutionException){synchronized(guard){claimed=false}}
     }
     private fun approve(peer:String,files:List<FileMeta>,sending:Boolean):Boolean {
         val approval=Approval(peer,files,sending)
-        state{it.copy(approval=approval,busy=true,status="Waiting for your approval…")}
+        state{it.copy(approval=approval,busy=true,status="Waiting for your approval…",connection=it.connection.advance(ConnectionPhase.APPROVAL))}
         return try{approval.answer.get(90,TimeUnit.SECONDS)}finally{state{it.copy(approval=null)}}
     }
     private fun send(input:InputStream,output:OutputStream,files:List<Prepared>,offsets:JSONArray){
         require(offsets.length()==files.size)
         files.forEachIndexed{index,source->
             val offset=offsets.getLong(index);require(offset in 0..source.meta.size)
-            state{it.copy(busy=true,current=source.meta.name,status="Sending…",done=offset,total=source.meta.size)}
+            state{it.copy(busy=true,current=source.meta.name,status="Sending…",done=offset,total=source.meta.size,connection=it.connection.advance(ConnectionPhase.SENDING))}
             var updated=0L
             source.open(context,offset).use{Wire.copy(it,output,source.meta.size-offset){done->if(System.currentTimeMillis()-updated>120||offset+done==source.meta.size){updated=System.currentTimeMillis();state{s->s.copy(done=offset+done)}}}}
             status("Waiting for file verification…")
+            phase(ConnectionPhase.VERIFYING)
             Wire.success(Wire.read(input));store.addHistory("Sent",source.meta.name,source.meta.size,source.uri.toString())
         }
-        status("Transfer complete. Files verified.")
+        phase(ConnectionPhase.FINISHED);status("Transfer complete. Files verified.")
     }
     private fun receive(input:InputStream,output:OutputStream,files:List<FileMeta>){
         val used=mutableSetOf<String>()
         val offsets=files.map{if(used.add(it.sha+it.size))store.offset(it) else 0L}
         Wire.write(output,JSONObject().put("ok",true).put("offsets",JSONArray(offsets)))
         files.forEachIndexed{index,file->
-            state{it.copy(busy=true,current=file.name,status="Receiving…",done=offsets[index],total=file.size)}
+            state{it.copy(busy=true,current=file.name,status="Receiving…",done=offsets[index],total=file.size,connection=it.connection.advance(ConnectionPhase.RECEIVING))}
             var updated=0L
-            try {store.receive(file,offsets[index],input,{status("Verifying ${file.name}…")}){done->if(System.currentTimeMillis()-updated>120||done==file.size){updated=System.currentTimeMillis();state{it.copy(done=done)}}};Wire.write(output,JSONObject().put("ok",true).put("index",index))}
+            try {store.receive(file,offsets[index],input,{phase(ConnectionPhase.VERIFYING);status("Verifying ${file.name}…")},checkCancelled={check(!stopped){"Disconnected."}}){done->if(System.currentTimeMillis()-updated>120||done==file.size){updated=System.currentTimeMillis();state{it.copy(done=done)}}};Wire.write(output,JSONObject().put("ok",true).put("index",index))}
             catch(e:Exception){runCatching{Wire.write(output,reject(e.message?:"The file could not be received."))};throw e}
         }
-        status("Transfer complete. Files saved in Downloads/SHARE-ME-ROWELL.")
+        phase(ConnectionPhase.FINISHED);status("Transfer complete. Files saved in Downloads/SHARE-ME-ROWELL.")
     }
     private fun reject(message:String)=JSONObject().put("ok",false).put("error",message)
     override fun close(){synchronized(guard){stopped=true;listener?.close()};Model.value.approval?.answer?.complete(false);synchronized(connections){connections.toList().forEach{runCatching{it.close()}};connections.clear()};executor.shutdownNow()}

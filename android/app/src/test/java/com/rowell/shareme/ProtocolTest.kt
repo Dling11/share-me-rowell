@@ -35,6 +35,11 @@ class ProtocolTest {
         assertEquals("save.zip",safeName("save.zip"))
     }
     @Test fun emptyFilesHaveTheStandardSha256(){assertEquals("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",sha256(ByteArrayInputStream(byteArrayOf())))}
+    @Test fun disconnectCanCancelChecksumVerificationBeforeReadingTheWholeFile(){
+        val input=ByteArrayInputStream(ByteArray(2*1024*1024){7});var checks=0
+        try{sha256(input){if(++checks==2)throw java.util.concurrent.CancellationException("Disconnected")};fail("Verification should stop")}
+        catch(_:java.util.concurrent.CancellationException){assertTrue(input.available()>1024*1024)}
+    }
     @Test fun resumeSkipReadsTheCorrectSuffix(){val input=ByteArrayInputStream(byteArrayOf(1,2,3,4,5));Wire.skip(input,3);assertArrayEquals(byteArrayOf(4,5),input.readBytes())}
     @Test fun certificatePinRejectsADifferentCertificate(){val encoded="test certificate".toByteArray();val expected=hex(java.security.MessageDigest.getInstance("SHA-256").digest(encoded));verifyCertificate(encoded,expected);rejected{verifyCertificate(encoded,"a".repeat(64))}}
     @Test fun aCancelledSessionCannotClearTheNewSessionsProgress(){val sessions=SessionEpoch();var status="idle";val old=sessions.next();sessions.update(old){status="old receiving"};val current=sessions.next();sessions.update(current){status="new receiving"};assertFalse(sessions.update(old){status="old stopped"});assertEquals("new receiving",status);assertTrue(sessions.update(current){status="complete"})}

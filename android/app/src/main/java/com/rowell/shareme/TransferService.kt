@@ -36,6 +36,7 @@ class TransferService:Service(){
         if(intent==null){stopSelf();return START_NOT_STICKY}
         when(intent.action){
             "stop"->stopSelf()
+            "disconnect"->{if(Model.value.connection.phase.active)disconnectCurrent("Disconnected. Scan again to resume an unfinished file.")}
             "prepare"->{
                 if(Model.value.busy)return START_NOT_STICKY
                 val uris=intent.getStringArrayListExtra("uris").orEmpty().map(Uri::parse)
@@ -53,7 +54,8 @@ class TransferService:Service(){
         }
         return START_NOT_STICKY
     }
-    private fun resetTransport(){Model.epochs.next();transport?.close();transport=null;Model.set{it.copy(pairing=null,approval=null,busy=false)}}
+    private fun resetTransport(){Model.epochs.next();transport?.close();transport=null;Model.set{it.copy(pairing=null,approval=null,busy=false,current="",done=0,total=0,connection=PeerConnection())}}
+    private fun disconnectCurrent(message:String,failed:Boolean=false){val peer=Model.value.connection;resetTransport();networkCallback?.let{runCatching{getSystemService(ConnectivityManager::class.java).unregisterNetworkCallback(it)}};networkCallback=null;Model.set{it.copy(connection=if(failed)peer.advance(ConnectionPhase.FAILED)else peer.disconnect(),status=message)}}
     private fun startServer(mode:String){
         if(Model.value.busy)return
         resetTransport()
@@ -65,6 +67,7 @@ class TransferService:Service(){
     private fun connect(pair:Pairing){
         if(pair.mode=="receive"&&Model.value.files.isEmpty()){Model.update(status="Choose files in Send first, then scan the receiver.");return}
         val worker=Transport(this);transport=worker
+        Model.set{it.copy(connection=PeerConnection.begin(pair.name))}
         val connectivity=getSystemService(ConnectivityManager::class.java)
         fun begin(network:Network?){if(live&&transport===worker)worker.connect(pair,if(pair.mode=="receive")Model.value.files else emptyList(),network)}
         val existing=wifiForHosts(this,pair.hosts)
@@ -78,11 +81,11 @@ class TransferService:Service(){
             networkCallback?.let{runCatching{connectivity.unregisterNetworkCallback(it)}}
             val callback=object:ConnectivityManager.NetworkCallback(){
                 override fun onAvailable(network:Network){begin(network)}
-                override fun onUnavailable(){if(live&&transport===worker)Model.set{it.copy(busy=false,status="Could not join the hotspot. Connect manually and scan again.")}}
-                override fun onLost(network:Network){if(live&&transport===worker)Model.update(status="Hotspot disconnected. Reconnect and scan again to resume.")}
+                override fun onUnavailable(){scope.launch{if(live&&transport===worker)disconnectCurrent("Could not join the hotspot. Connect manually and scan again.",failed=true)}}
+                override fun onLost(network:Network){scope.launch{if(live&&transport===worker)disconnectCurrent("Hotspot disconnected. Reconnect and scan again to resume.")}}
             }
             networkCallback=callback
-            try{connectivity.requestNetwork(request,callback,30000)}catch(e:Exception){Model.set{it.copy(busy=false,status="Allow nearby Wi-Fi access, then scan again.")}}
+            try{connectivity.requestNetwork(request,callback,30000)}catch(e:Exception){disconnectCurrent("Allow nearby Wi-Fi access, then scan again.",failed=true)}
         }
     }
     @Suppress("DEPRECATION")
@@ -113,7 +116,7 @@ class TransferService:Service(){
     override fun onDestroy(){
         live=false;Model.epochs.next()
         transport?.close();installer?.close();hotspot?.close();networkCallback?.let{runCatching{getSystemService(ConnectivityManager::class.java).unregisterNetworkCallback(it)}}
-        scope.cancel();if(wake.isHeld)wake.release();Model.set{it.copy(mode="",pairing=null,busy=false,approval=null,appUrl="",ssid="",password="",active=false,status="Sharing stopped. Partial files can resume when you scan again.")};super.onDestroy()
+        scope.cancel();if(wake.isHeld)wake.release();Model.set{it.copy(mode="",pairing=null,busy=false,approval=null,appUrl="",ssid="",password="",active=false,status="Sharing stopped. Partial files can resume when you scan again.",connection=it.connection.disconnect())};super.onDestroy()
     }
     companion object{
         fun wifiForHosts(context:Context,hosts:List<String>):Network?{

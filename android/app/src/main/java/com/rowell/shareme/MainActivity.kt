@@ -65,6 +65,7 @@ class MainActivity:ComponentActivity(){
         var paste by remember{mutableStateOf(false)}
         var pasted by remember{mutableStateOf("")}
         var stop by remember{mutableStateOf(false)}
+        var disconnect by remember{mutableStateOf(false)}
         var clear by remember{mutableStateOf(false)}
         var appTools by rememberSaveable{mutableStateOf(false)}
         val permissions=rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()){granted->
@@ -93,12 +94,14 @@ class MainActivity:ComponentActivity(){
             Spacer(Modifier.weight(1f));Surface(color=Mint.copy(alpha=.10f),shape=RoundedCornerShape(30.dp)){Text("Local & offline",Modifier.padding(12.dp,8.dp),style=MaterialTheme.typography.labelSmall,color=Mint)}
         }},bottomBar={NavigationBar(containerColor=Bg,tonalElevation=0.dp){listOf(Triple("home","Home",Icons.Rounded.Home),Triple("send","Send",Icons.AutoMirrored.Rounded.Send),Triple("receive","Receive",Icons.Rounded.Download),Triple("history","Recent",Icons.Rounded.History)).forEach{(id,label,icon)->NavigationBarItem(selected=page==id,onClick={page=id},icon={Icon(icon,null)},label={Text(label)},colors=NavigationBarItemDefaults.colors(selectedIconColor=Mint,selectedTextColor=Mint,indicatorColor=Mint.copy(alpha=.12f),unselectedIconColor=Muted,unselectedTextColor=Muted))}}}){insets->
             Column(Modifier.fillMaxSize().padding(insets).verticalScroll(rememberScrollState()).padding(20.dp),verticalArrangement=Arrangement.spacedBy(16.dp)){
-                if(state.active)CardBox{
+                if(state.connection.visible)DeviceCard(state){disconnect=true}
+                if(state.active&&!state.connection.visible)CardBox{
                     Text(state.status,fontWeight=FontWeight.SemiBold)
                     if(state.busy&&state.total>0){LinearProgressIndicator(progress={(state.done.toDouble()/state.total).toFloat().coerceIn(0f,1f)},modifier=Modifier.fillMaxWidth());Text("${size(state.done)} / ${size(state.total)}",color=Muted)}
                     else if(state.busy)LinearProgressIndicator(Modifier.fillMaxWidth())
                     OutlinedButton(onClick={stop=true}){Text("Stop sharing")}
-                }else if(state.status!="Ready to share")CardBox{Text(state.status)}
+                }else if(!state.connection.visible&&state.status!="Ready to share")CardBox{Text(state.status)}
+                if(state.active&&state.connection.visible)TextButton(onClick={stop=true}){Text("Stop sharing & hotspot",color=Muted)}
                 when(page){
                     "home"->{
                         Spacer(Modifier.height(4.dp))
@@ -158,12 +161,13 @@ class MainActivity:ComponentActivity(){
                     }
                 }
                 if(page!="home"&&!state.busy)TextButton(onClick={paste=true}){Text("Paste a pairing link instead")}
-                Text("Share-Me-Rowell 1.0.0 · By Rowell",style=MaterialTheme.typography.bodySmall,color=Muted)
+                Text("Share-Me-Rowell 1.0.1 · By Rowell",style=MaterialTheme.typography.bodySmall,color=Muted)
             }
         }
         state.approval?.let{request->AlertDialog(onDismissRequest={request.answer.complete(false)},title={Text(if(request.sending)"Allow this device to receive?" else "Accept these files?")},text={Column(Modifier.heightIn(max=300.dp).verticalScroll(rememberScrollState())){Text(request.name,fontWeight=FontWeight.Bold);Spacer(Modifier.height(10.dp));request.files.forEach{Text("${it.name} · ${size(it.size)}")};Spacer(Modifier.height(10.dp));Text("Total: ${size(request.files.sumOf{it.size})}")}},confirmButton={TextButton(onClick={request.answer.complete(true)}){Text("Accept")}},dismissButton={TextButton(onClick={request.answer.complete(false)}){Text("Decline")}})}
         if(paste)AlertDialog(onDismissRequest={paste=false},title={Text("Pairing link")},text={OutlinedTextField(pasted,{pasted=it.take(8192)},label={Text("Paste Share-Me-Rowell link")})},confirmButton={TextButton(onClick={paste=false;connect(pasted)}){Text("Connect")}},dismissButton={TextButton(onClick={paste=false}){Text("Cancel")}})
         if(stop)AlertDialog(onDismissRequest={stop=false},title={Text("Stop sharing?")},text={Text("An interrupted file can resume when you connect and send it again. A hotspot created here will also close.")},confirmButton={TextButton(onClick={stop=false;start("stop")}){Text("Stop")}},dismissButton={TextButton(onClick={stop=false}){Text("Keep sharing")}})
+        if(disconnect)AlertDialog(onDismissRequest={disconnect=false},title={Text("Disconnect this device?")},text={Text("Stops the current transfer. Scan again to resume an unfinished file. Your hotspot stays on.")},confirmButton={TextButton(onClick={disconnect=false;if(Model.value.connection.phase.active)start("disconnect")}){Text("Disconnect")}},dismissButton={TextButton(onClick={disconnect=false}){Text("Keep sharing")}})
         if(clear)AlertDialog(onDismissRequest={clear=false},title={Text("Remove unfinished downloads?")},text={Text("Frees storage used by interrupted transfers. Completed files stay in Downloads.")},confirmButton={TextButton(onClick={clear=false;if(!Model.value.busy)lifecycleScope.launch{withContext(Dispatchers.IO){ReceiveStore(this@MainActivity).clearIncomplete()};Model.update(status="Unfinished downloads removed.")}}){Text("Remove")}},dismissButton={TextButton(onClick={clear=false}){Text("Cancel")}})
     }
     private fun shareInstaller(){lifecycleScope.launch{try{val uri=withContext(Dispatchers.IO){val destination=File(cacheDir,"installer/Share-Me-Rowell.apk");destination.parentFile!!.mkdirs();File(applicationInfo.sourceDir).copyTo(destination,true);FileProvider.getUriForFile(this@MainActivity,"$packageName.files",destination)};shareUris(listOf(uri))}catch(e:Exception){toast("Could not prepare the installer.")}}}
@@ -182,6 +186,21 @@ val Bg=Color(0xFF0C131E);val Panel=Color(0xFF162232);val Mint=Color(0xFF70E2C2);
     Surface(onClick=onClick,color=if(primary)Mint else Panel,contentColor=if(primary)Bg else Color(0xFFF5F8FF),shape=RoundedCornerShape(26.dp),modifier=modifier){Column(Modifier.padding(20.dp).heightIn(min=114.dp),verticalArrangement=Arrangement.SpaceBetween){Icon(icon,null,Modifier.size(32.dp));Column{Text(title,style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold);Text(hint,style=MaterialTheme.typography.bodySmall)}}}
 }
 @Composable fun FeatureRow(icon:ImageVector,title:String,hint:String){Row(horizontalArrangement=Arrangement.spacedBy(14.dp),verticalAlignment=Alignment.CenterVertically){Surface(color=Mint.copy(alpha=.10f),shape=RoundedCornerShape(14.dp)){Icon(icon,null,Modifier.padding(12.dp).size(23.dp),tint=Mint)};Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(4.dp)){Text(title,fontWeight=FontWeight.SemiBold);Text(hint,color=Muted,style=MaterialTheme.typography.bodySmall)}}}
+@Composable fun DeviceCard(state:ScreenState,onDisconnect:()->Unit){
+    val peer=state.connection
+    CardBox{
+        FeatureRow(Icons.Rounded.Devices,peer.name,"Sharing device")
+        val tint=when(peer.phase){ConnectionPhase.CONNECTING,ConnectionPhase.APPROVAL,ConnectionPhase.WAITING->Color(0xFFFFD18A);ConnectionPhase.SENDING,ConnectionPhase.RECEIVING,ConnectionPhase.VERIFYING->Mint;else->Muted}
+        Surface(color=tint.copy(alpha=.10f),shape=RoundedCornerShape(12.dp)){Text("●  ${peer.phase.label}",Modifier.padding(12.dp,8.dp),color=tint,style=MaterialTheme.typography.labelLarge)}
+        Text(state.status,color=Muted,style=MaterialTheme.typography.bodySmall)
+        if(peer.phase.active&&state.busy){
+            if(state.total>0){Text(state.current,maxLines=2);LinearProgressIndicator(progress={(state.done.toDouble()/state.total).toFloat().coerceIn(0f,1f)},modifier=Modifier.fillMaxWidth());Text("${size(state.done)} / ${size(state.total)}",color=Muted,style=MaterialTheme.typography.bodySmall)}
+            else LinearProgressIndicator(Modifier.fillMaxWidth())
+        }
+        if(peer.phase.active)OutlinedButton(onClick=onDisconnect,modifier=Modifier.fillMaxWidth()){Icon(Icons.Rounded.LinkOff,null,Modifier.size(18.dp));Spacer(Modifier.width(8.dp));Text("Disconnect")}
+        else Text("Scan a pairing code to share again.",color=Muted,style=MaterialTheme.typography.bodySmall)
+    }
+}
 @Composable fun QrCard(text:String,hint:String){
     val bitmap=remember(text){val matrix=QRCodeWriter().encode(text,BarcodeFormat.QR_CODE,800,800,mapOf(EncodeHintType.MARGIN to 4));Bitmap.createBitmap(800,800,Bitmap.Config.ARGB_8888).also{image->val pixels=IntArray(800*800){index->if(matrix[index%800,index/800])android.graphics.Color.BLACK else android.graphics.Color.WHITE};image.setPixels(pixels,0,800,0,0,800,800)}}
     CardBox{Image(bitmap.asImageBitmap(),"Pairing QR code",Modifier.fillMaxWidth().aspectRatio(1f).background(Color.White));Text(hint,color=Muted)}

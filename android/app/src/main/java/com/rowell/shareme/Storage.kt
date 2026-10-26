@@ -44,19 +44,20 @@ class ReceiveStore(private val context: Context) {
         check(prefs.edit().putString(key(file),uri.toString()).commit())
         return uri
     }
-    fun receive(file: FileMeta, offset: Long, input: InputStream, verifying:()->Unit,progress: (Long)->Unit): Uri {
+    fun receive(file: FileMeta, offset: Long, input: InputStream, verifying:()->Unit,checkCancelled:()->Unit={},progress: (Long)->Unit): Uri {
+        checkCancelled()
         val uri=part(file)
         val descriptor=checkNotNull(resolver.openFileDescriptor(uri,"rw"))
         ParcelFileDescriptor.AutoCloseOutputStream(descriptor).use { output ->
                 require(offset<=output.channel.size()) {"The partial file changed. Retry the transfer."}
                 output.channel.truncate(offset);output.channel.position(offset)
-                Wire.copy(input,output,file.size-offset){progress(offset+it)}
+                Wire.copy(input,output,file.size-offset){checkCancelled();progress(offset+it)}
                 output.fd.sync()
         }
         verifying()
-        val digest=resolver.openInputStream(uri)!!.use(::sha256)
+        val digest=resolver.openInputStream(uri)!!.use{sha256(it,checkCancelled)}
         if(digest!=file.sha) {resolver.delete(uri,null,null);prefs.edit().remove(key(file)).commit();error("Verification failed. Choose the source file again.")}
-        check(resolver.update(uri,ContentValues().apply{put(MediaStore.Downloads.IS_PENDING,0)},null,null)>0)
+        checkCancelled();check(resolver.update(uri,ContentValues().apply{put(MediaStore.Downloads.IS_PENDING,0)},null,null)>0)
         prefs.edit().remove(key(file)).commit()
         val shown=resolver.query(uri,arrayOf(MediaStore.Downloads.DISPLAY_NAME),null,null,null)?.use{if(it.moveToFirst())it.getString(0)else null}?:file.name
         addHistory("Received",shown,file.size,uri.toString())

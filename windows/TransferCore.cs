@@ -67,7 +67,7 @@ namespace ShareMeRowell {
             return list;
         }
         public static string Hex(byte[] bytes) { return BitConverter.ToString(bytes).Replace("-", "").ToLowerInvariant(); }
-        public static string Hash(Stream input) { using (var hash = SHA256.Create()) return Hex(hash.ComputeHash(input)); }
+        public static string Hash(Stream input,CancellationToken cancellation=default(CancellationToken)) {using(var hash=SHA256.Create()){var buffer=new byte[262144];int count;while(true){cancellation.ThrowIfCancellationRequested();count=input.Read(buffer,0,buffer.Length);if(count==0)break;hash.TransformBlock(buffer,0,count,buffer,0);}hash.TransformFinalBlock(new byte[0],0,0);return Hex(hash.Hash);}}
         public static string Secret() { byte[] bytes = new byte[32]; using (var rng = RandomNumberGenerator.Create()) rng.GetBytes(bytes); return Convert.ToBase64String(bytes).TrimEnd('=').Replace('+','-').Replace('/','_'); }
         public static bool Equal(string a, string b) { if (a == null || b == null || a.Length != b.Length) return false; int difference=0; for(int i=0;i<a.Length;i++) difference |= a[i]^b[i]; return difference==0; }
         public static string SafeName(string raw) {
@@ -91,12 +91,22 @@ namespace ShareMeRowell {
             output.Flush();
         }
     }
+    public enum ConnectionPhase {Idle,Approval,Waiting,Sending,Receiving,Verifying,Finished,Declined,Disconnected,Failed}
+    public sealed class ConnectionSnapshot {
+        public readonly string Peer;
+        public readonly ConnectionPhase Phase;
+        public ConnectionSnapshot(string peer,ConnectionPhase phase){Peer=peer;Phase=phase;}
+        public bool Active {get{return Phase==ConnectionPhase.Approval||Phase==ConnectionPhase.Waiting||Phase==ConnectionPhase.Sending||Phase==ConnectionPhase.Receiving||Phase==ConnectionPhase.Verifying;}}
+        public bool Terminal {get{return Phase==ConnectionPhase.Finished||Phase==ConnectionPhase.Declined||Phase==ConnectionPhase.Disconnected||Phase==ConnectionPhase.Failed;}}
+        public string Label {get{switch(Phase){case ConnectionPhase.Approval:return "Waiting for your approval";case ConnectionPhase.Waiting:return "Waiting for the other device";case ConnectionPhase.Sending:return "Connected · sending";case ConnectionPhase.Receiving:return "Connected · receiving";case ConnectionPhase.Verifying:return "Connected · verifying";case ConnectionPhase.Finished:return "Finished · disconnected";case ConnectionPhase.Declined:return "Declined · disconnected";case ConnectionPhase.Disconnected:return "Disconnected";case ConnectionPhase.Failed:return "Connection ended";default:return "No device connected";}}}
+        public Dictionary<string,object> Json(){return new Dictionary<string,object>{{"peer",Peer},{"phase",Phase.ToString()},{"active",Active},{"label",Label}};}
+    }
     public sealed class TransferServer : IDisposable {
-        public Func<string,List<FileMeta>,bool> Approve;
+        public Func<string,List<FileMeta>,CancellationToken,bool> Approve;
         public Action<string,long,long> Progress;
         public Action<string> Status;
         public Action<string,string,long,string> Completed;
-        public string Name = "Windows PC";
+        public string Name = Environment.MachineName;
         public string Mode = "receive";
         public List<Source> Sources = new List<Source>();
         public readonly string Destination;
@@ -110,6 +120,10 @@ namespace ShareMeRowell {
         private TcpListener listener;
         private readonly object gate = new object();
         private readonly HashSet<TcpClient> clients=new HashSet<TcpClient>();
+        private ConnectionSnapshot connection=new ConnectionSnapshot("",ConnectionPhase.Idle);
+        private CancellationTokenSource cancellation;
+        public ConnectionSnapshot Connection {get{lock(gate)return connection;}}
+        private void Phase(ConnectionPhase phase){lock(gate){if(!connection.Terminal)connection=new ConnectionSnapshot(connection.Peer,phase);}}
         public TransferServer(string destination, string stateDirectory) {
             Destination=System.IO.Path.GetFullPath(destination); Directory.CreateDirectory(Destination); Directory.CreateDirectory(stateDirectory);
             string certPath=System.IO.Path.Combine(stateDirectory,"identity.dpapi");
@@ -129,7 +143,7 @@ namespace ShareMeRowell {
         }
         public string Fingerprint { get { using(var hash=SHA256.Create()) return Wire.Hex(hash.ComputeHash(Certificate.RawData)); } }
         public void Refresh() { Code=Wire.Secret(); Expires=DateTime.UtcNow.AddMinutes(10); }
-        public void CancelActive(){lock(gate){foreach(var client in clients.ToArray())client.Close();}if(Status!=null)Status("Transfer stopped. Scan again to resume.");}
+        public void CancelActive(){lock(gate){if(connection.Active)connection=new ConnectionSnapshot(connection.Peer,ConnectionPhase.Disconnected);if(cancellation!=null)cancellation.Cancel();foreach(var client in clients.ToArray())client.Close();}if(Status!=null)Status("Disconnected. Scan again to resume an unfinished file.");}
         public string Pairing(string address) {
             var json=new Dictionary<string,object>{{"v",1},{"hosts",new[]{address}},{"port",Port},{"fp",Fingerprint},{"code",Code},{"mode",Mode},{"name",Name}};
             return "shareme-rowell://pair/"+Convert.ToBase64String(Wire.Utf8.GetBytes(Wire.Encode(json))).TrimEnd('=').Replace('+','-').Replace('/','_');
@@ -140,7 +154,7 @@ namespace ShareMeRowell {
         }
         private void Reject(Stream stream,string message) { Wire.Write(stream,new Dictionary<string,object>{{"ok",false},{"error",message}}); }
         private void Handle(TcpClient client) {
-            bool claimed=false;
+            bool claimed=false;CancellationTokenSource sessionCancellation=null;
             try {
                 if(!Wire.Private(((IPEndPoint)client.Client.RemoteEndPoint).Address)) return;
                 client.ReceiveTimeout=15000; client.SendTimeout=30000; client.NoDelay=true;
@@ -148,37 +162,43 @@ namespace ShareMeRowell {
                     ssl.AuthenticateAsServer(Certificate,false,SslProtocols.Tls12,false);
                     var request=Wire.Read(ssl);
                     if(!request.ContainsKey("v") || Convert.ToInt32(request["v"])!=1 || DateTime.UtcNow>Expires || !Wire.Equal(Convert.ToString(request.ContainsKey("code")?request["code"]:null),Code)) {Reject(ssl,"Pairing expired. Scan the current QR code.");return;}
-                    if(Interlocked.CompareExchange(ref busy,1,0)!=0) {Reject(ssl,"This device is busy with another transfer.");return;} claimed=true;
                     string peer=Wire.SafeName(Convert.ToString(request.ContainsKey("name")?request["name"]:"Nearby device"));
+                    if(peer.Length>64)peer=peer.Substring(0,64);
+                    lock(gate){if(busy==0){busy=1;claimed=true;sessionCancellation=new CancellationTokenSource();cancellation=sessionCancellation;connection=new ConnectionSnapshot(peer,ConnectionPhase.Approval);}}
+                    if(!claimed){Reject(ssl,"This device is busy with another transfer.");return;}
                     string op=Convert.ToString(request["op"]);
                     List<Source> sources; string mode;
                     lock(gate) {sources=new List<Source>(Sources);mode=Mode;}
                     List<FileMeta> files;
                     if(op=="push" && mode=="receive") files=Wire.Files(request);
                     else if(op=="pull" && mode=="send" && sources.Count>0) files=sources.Select(s=>s.Meta).ToList();
-                    else {Reject(ssl,"Choose Send on one device and Receive on the other.");return;}
+                    else {Phase(ConnectionPhase.Failed);Reject(ssl,"Choose Send on one device and Receive on the other.");return;}
                     client.ReceiveTimeout=120000;
-                    if(Approve==null || !Approve(peer,files)) {Reject(ssl,"Transfer declined on the other device.");return;}
+                    sessionCancellation.Token.ThrowIfCancellationRequested();
+                    bool allowed=Approve!=null&&Approve(peer,files,sessionCancellation.Token);
+                    sessionCancellation.Token.ThrowIfCancellationRequested();
+                    if(!allowed){Phase(ConnectionPhase.Declined);if(Status!=null)Status("Transfer declined.");Reject(ssl,"Transfer declined on the other device.");return;}
                     client.ReceiveTimeout=600000;
-                    if(op=="push") Receive(ssl,files);
+                    if(op=="push") Receive(ssl,files,sessionCancellation.Token);
                     else {
                         Wire.Write(ssl,new Dictionary<string,object>{{"ok",true},{"sender",Name},{"files",files.Select(f=>f.Json()).ToArray()}});
-                        var accepted=Wire.Read(ssl); if(!Wire.Ok(accepted)) return;
+                        Phase(ConnectionPhase.Waiting);var accepted=Wire.Read(ssl); if(!Wire.Ok(accepted)){Phase(ConnectionPhase.Declined);if(Status!=null)Status("Transfer declined on the other device.");return;}
                         var offsets=((System.Collections.IEnumerable)accepted["offsets"]).Cast<object>().Select(Convert.ToInt64).ToArray();
                         if(offsets.Length!=files.Count) throw new IOException("Invalid resume response.");
                         for(int i=0;i<sources.Count;i++) {
+                            Phase(ConnectionPhase.Sending);
                             int index=i; long offset=offsets[i]; if(offset<0 || offset>files[i].size) throw new IOException("Invalid resume position.");
                             using(var input=sources[i].Open(offset)) Wire.Copy(input,ssl,files[i].size-offset,done=>{if(Progress!=null) Progress(files[index].name,offset+done,files[index].size);});
-                            var ack=Wire.Read(ssl); if(!Wire.Ok(ack)) throw new IOException(Convert.ToString(ack.ContainsKey("error")?ack["error"]:"Verification failed."));
+                            Phase(ConnectionPhase.Verifying);var ack=Wire.Read(ssl); if(!Wire.Ok(ack)) throw new IOException(Convert.ToString(ack.ContainsKey("error")?ack["error"]:"Verification failed."));
                             if(Completed!=null) Completed("Sent",files[i].name,files[i].size,sources[i].Path);
                         }
                     }
-                    if(Status!=null) Status("Transfer complete. Files verified.");
+                    Phase(ConnectionPhase.Finished);if(Status!=null) Status("Transfer complete. Files verified.");
                 }
-            } catch(Exception error) { if(!stopped && Status!=null) Status(error is IOException ? error.Message : "Connection interrupted. Scan again to resume."); }
-            finally {client.Close(); lock(gate) clients.Remove(client); if(claimed) Interlocked.Exchange(ref busy,0);}
+            } catch(Exception error) { if(claimed&&!stopped&&!Connection.Terminal){Phase(ConnectionPhase.Failed);if(Status!=null&&!(sessionCancellation!=null&&sessionCancellation.IsCancellationRequested))Status(error is IOException ? error.Message : "Connection interrupted. Scan again to resume.");} }
+            finally {client.Close();lock(gate){clients.Remove(client);if(claimed){busy=0;cancellation=null;}}if(sessionCancellation!=null)sessionCancellation.Dispose();}
         }
-        private void Receive(Stream stream,List<FileMeta> files) {
+        private void Receive(Stream stream,List<FileMeta> files,CancellationToken cancellation) {
             string parts=System.IO.Path.Combine(Destination,".shareme-parts"); Directory.CreateDirectory(parts);
             var seen=new HashSet<string>();
             long[] offsets=files.Select(f=>{string key=f.sha256+"-"+f.size;if(!seen.Add(key))return 0L;string path=System.IO.Path.Combine(parts,key+".part");long length=File.Exists(path)?new FileInfo(path).Length:0;if(length>f.size){File.Delete(path);length=0;}return length;}).ToArray();
@@ -186,19 +206,20 @@ namespace ShareMeRowell {
             if(new DriveInfo(System.IO.Path.GetPathRoot(Destination)).AvailableFreeSpace<remaining+16777216) throw new IOException("Not enough free space in the receive folder.");
             Wire.Write(stream,new Dictionary<string,object>{{"ok",true},{"offsets",offsets}});
             for(int i=0;i<files.Count;i++) {
+                Phase(ConnectionPhase.Receiving);
                 var file=files[i]; long offset=offsets[i]; string partial=System.IO.Path.Combine(parts,file.sha256+"-"+file.size+".part");
                 using(var output=new FileStream(partial,FileMode.OpenOrCreate,FileAccess.Write,FileShare.None)) {output.SetLength(offset);output.Position=offset; Wire.Copy(stream,output,file.size-offset,done=>{if(Progress!=null) Progress(file.name,offset+done,file.size);}); output.Flush(true);}
-                if(Status!=null) Status("Verifying "+file.name+"…");
-                string actual; using(var input=File.OpenRead(partial)) actual=Wire.Hash(input);
+                Phase(ConnectionPhase.Verifying);if(Status!=null) Status("Verifying "+file.name+"…");
+                string actual; using(var input=File.OpenRead(partial)) actual=Wire.Hash(input,cancellation);
                 if(!Wire.Equal(actual,file.sha256)) {File.Delete(partial); Reject(stream,"File verification failed. Choose the source file again.");throw new IOException("Verification failed; the incomplete file was removed.");}
                 string destination=System.IO.Path.Combine(Destination,file.name); int suffix=2;
                 while(File.Exists(destination)||Directory.Exists(destination)) {destination=System.IO.Path.Combine(Destination,System.IO.Path.GetFileNameWithoutExtension(file.name)+" ("+(suffix++)+")"+System.IO.Path.GetExtension(file.name));}
-                File.Move(partial,destination);
+                lock(gate){cancellation.ThrowIfCancellationRequested();File.Move(partial,destination);}
                 if(Completed!=null) Completed("Received",System.IO.Path.GetFileName(destination),file.size,destination);
                 Wire.Write(stream,new Dictionary<string,object>{{"ok",true},{"index",i}});
             }
         }
-        public void Dispose() {stopped=true;if(listener!=null)listener.Stop();lock(gate){foreach(var client in clients.ToArray())client.Close();clients.Clear();}Certificate.Dispose();}
+        public void Dispose() {stopped=true;if(listener!=null)listener.Stop();CancelActive();lock(gate)clients.Clear();Certificate.Dispose();}
     }
 
     public sealed class InstallerServer : IDisposable {

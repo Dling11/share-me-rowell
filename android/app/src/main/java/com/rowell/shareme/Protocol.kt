@@ -26,9 +26,10 @@ fun safeName(raw: String): String {
     val name = cleaned.ifBlank { "Received file" }
     return if (name.substringBefore('.').uppercase().matches(Regex("CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9]"))) "_$name" else name
 }
-fun sha256(input: InputStream): String {
+fun sha256(input:InputStream):String=sha256(input,{})
+fun sha256(input: InputStream,checkCancelled:()->Unit): String {
     val digest = MessageDigest.getInstance("SHA-256"); val buffer = ByteArray(256 * 1024)
-    while (true) { val count = input.read(buffer); if (count < 0) break; digest.update(buffer, 0, count) }
+    while (true) {checkCancelled(); val count = input.read(buffer); if (count < 0) break; digest.update(buffer, 0, count) }
     return hex(digest.digest())
 }
 fun hex(bytes: ByteArray) = bytes.joinToString("") { "%02x".format(it) }

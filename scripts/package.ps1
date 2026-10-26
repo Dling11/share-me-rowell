@@ -1,7 +1,7 @@
 $ErrorActionPreference='Stop'
 $projectRoot=(Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
 $dist=Join-Path $projectRoot 'dist'
-$version='1.0.0'
+$version='1.0.1'
 $apk=Join-Path $dist "Share-Me-Rowell-$version.apk"
 $windows=Join-Path $dist 'Windows'
 foreach($required in @($apk,(Join-Path $windows 'Share-Me-Rowell.exe'),(Join-Path $windows 'QRCoder.dll'))){if(!(Test-Path -LiteralPath $required)){throw "Build first: missing $required"}}
@@ -20,7 +20,7 @@ foreach($result in Get-ChildItem -LiteralPath (Join-Path $projectRoot 'android\a
 }
 [xml]$lint=Get-Content -LiteralPath (Join-Path $projectRoot 'android\app\build\reports\lint-results-release.xml') -Raw
 $lintErrors=@($lint.issues.issue | Where-Object {$_.severity -in @('Error','Fatal')}).Count
-if($lintErrors -ne 0 -or $jvmPassed -lt 12 -or $testReport.passed -lt 12 -or !$qrReport.passed){throw 'Required local checks are incomplete'}
+if($lintErrors -ne 0 -or $jvmPassed -lt 18 -or $testReport.passed -lt 18 -or !$qrReport.passed){throw 'Required local checks are incomplete'}
 New-Item -ItemType Directory -Force -Path (Join-Path $windows 'Android') | Out-Null
 Copy-Item -LiteralPath $apk -Destination (Join-Path $windows 'Android\Share-Me-Rowell.apk')
 Copy-Item -LiteralPath (Join-Path $projectRoot 'scripts\Allow-Local-Network.ps1') -Destination $windows
@@ -30,7 +30,7 @@ Copy-Item -Path (Join-Path $projectRoot 'licenses\*.txt') -Destination (Join-Pat
 $androidGuide=@'
 SHARE-ME-ROWELL - Android
 
-1. Extract this ZIP, then tap Share-Me-Rowell-1.0.0.apk on Android 10 or newer.
+1. Extract this ZIP, then tap Share-Me-Rowell-1.0.1.apk on Android 10 or newer.
 2. Allow your browser/file manager to install this APK if Android asks.
 3. Connect both devices to the same Wi-Fi or a phone hotspot.
 4. Sender: Send > Choose files. Receiver: Receive.
@@ -41,6 +41,8 @@ For PC transfers, run the Windows companion and scan its Send/Receive code.
 For offline phone transfers, use Create offline hotspot or Android's Hotspot settings.
 Bluetooth uses Android's normal share sheet. Mobile data is not required.
 An interrupted transfer can resume when you send the same files again.
+The device card shows who you are sharing with and the current stage.
+Disconnect stops that connection; Stop sharing & hotspot also closes your hotspot.
 
 This release passed local protocol/build checks. Real-phone Wi-Fi, hotspot,
 Bluetooth, background behavior and performance testing are still pending.
@@ -56,6 +58,8 @@ PC to phone: Send files > Choose files. Phone: Receive > Scan sender's code.
 Phone to PC: Receive files. Phone: Send > Choose files > Scan receiver's code.
 Approve the transfer requests. Both devices need the same Wi-Fi/router/hotspot.
 Files arrive in Downloads\SHARE-ME-ROWELL. Existing files are kept.
+The device card at the bottom shows the peer and live transfer stage.
+Disconnect stops the connection and keeps unfinished files available to resume.
 
 Get the phone app displays a local download QR for the included APK.
 Scan that QR with the phone's normal camera while on the same network.
