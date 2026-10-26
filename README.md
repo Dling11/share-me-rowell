@@ -2,7 +2,7 @@
 
 Offline file sharing for **Android and Windows**, by Rowell. Send APKs, ISOs, ZIPs, photos, videos and other files over the same Wi-Fi or a phone hotspot. No account or cloud service is needed.
 
-**[Download Android APK](https://github.com/Dling11/share-me-rowell/releases/download/v1.0.1/Share-Me-Rowell-1.0.1.apk)** · **[Download Windows ZIP](https://github.com/Dling11/share-me-rowell/releases/download/v1.0.1/Share-Me-Rowell-Windows-1.0.1.zip)** · [All downloads](https://github.com/Dling11/share-me-rowell/releases/tag/v1.0.1)
+**[Download Android APK](https://github.com/Dling11/share-me-rowell/releases/download/v1.0.1-r1/Share-Me-Rowell-1.0.1.apk)** · **[Download Windows ZIP](https://github.com/Dling11/share-me-rowell/releases/download/v1.0.1-r1/Share-Me-Rowell-Windows-1.0.1.zip)** · [All downloads](https://github.com/Dling11/share-me-rowell/releases/tag/v1.0.1-r1)
 
 Android 10+ · Windows 10/11, 64-bit · **Preview release: real-phone testing is pending.**
 
@@ -16,16 +16,16 @@ A dark navy interface with mint accents, clear Send/Receive actions and a matchi
 
 | Device | Download |
 | --- | --- |
-| Android 10+ | [Installable APK](https://github.com/Dling11/share-me-rowell/releases/download/v1.0.1/Share-Me-Rowell-1.0.1.apk) |
-| Android, with instructions | [Android ZIP](https://github.com/Dling11/share-me-rowell/releases/download/v1.0.1/Share-Me-Rowell-Android-1.0.1.zip) |
-| Windows 10/11, 64-bit | [Portable Windows ZIP](https://github.com/Dling11/share-me-rowell/releases/download/v1.0.1/Share-Me-Rowell-Windows-1.0.1.zip) |
-| Both platforms | [Complete package](https://github.com/Dling11/share-me-rowell/releases/download/v1.0.1/Share-Me-Rowell-Complete-1.0.1.zip) |
+| Android 10+ | [Installable APK](https://github.com/Dling11/share-me-rowell/releases/download/v1.0.1-r1/Share-Me-Rowell-1.0.1.apk) |
+| Android, with instructions | [Android ZIP](https://github.com/Dling11/share-me-rowell/releases/download/v1.0.1-r1/Share-Me-Rowell-Android-1.0.1.zip) |
+| Windows 10/11, 64-bit | [Portable Windows ZIP](https://github.com/Dling11/share-me-rowell/releases/download/v1.0.1-r1/Share-Me-Rowell-Windows-1.0.1.zip) |
+| Both platforms | [Complete package](https://github.com/Dling11/share-me-rowell/releases/download/v1.0.1-r1/Share-Me-Rowell-Complete-1.0.1.zip) |
 
-Use these release assets to install the apps. GitHub's **Source code (zip)** is for developers. Checksums, instructions and validation status accompany the packages. The Windows ZIP also includes the exact Android APK for its local download QR.
+Use these release assets to install the apps. GitHub's **Source code (zip)** is for developers. Checksums, instructions and validation status accompany the packages. Each ZIP has one outer folder to keep its contents together. The Windows ZIP also includes the exact Android APK for its local download QR.
 
 ## Quick start
 
-1. **Install:** on Android, download and tap the APK; approve installation from your browser/file manager if asked. On Windows, extract the ZIP and open **Share-Me-Rowell.exe** from that folder.
+1. **Install:** on Android, download and tap the APK; approve installation from your browser/file manager if asked. On Windows, extract the ZIP, open its **Share-Me-Rowell** folder, then open **Share-Me-Rowell.exe**.
 2. **Connect:** put both devices on the same Wi-Fi/router or phone hotspot. No USB cable is needed. A normal Wi-Fi/hotspot transfer does not need internet access.
 3. **Choose:** open **Send → Choose files** on the sender and **Receive** on the receiver. On Windows these are **Send files** and **Receive files**.
 4. **Pair:** show a sender or receiver code on one device, then scan it from the opposite screen on the phone. For a PC transfer, always scan the PC's code with the phone.
@@ -35,7 +35,7 @@ If the other phone does not have the app yet, download the APK above, or use **H
 
 ## PC → phone
 
-1. Extract the Windows ZIP into one folder and open **Share-Me-Rowell.exe**. Keep `QRCoder.dll` beside it.
+1. Extract the Windows ZIP, open the **Share-Me-Rowell** folder, then open **Share-Me-Rowell.exe**. Keep `QRCoder.dll` beside it.
 2. Connect the PC and phone to the same Wi-Fi. A PC on Ethernet also works when connected to the same router.
 3. On the PC, select **Send files → Choose files**, or drag files into the list. File checksums are prepared first.
 4. On the phone, open Share-Me-Rowell → **Receive → Scan sender's code**. Scan the PC's QR code.

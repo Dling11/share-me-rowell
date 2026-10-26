@@ -45,4 +45,4 @@ Packaging puts the exact APK into Android, Windows and complete ZIPs, along with
 
 ## GitHub download links
 
-The source repository is [Dling11/share-me-rowell](https://github.com/Dling11/share-me-rowell). For version 1.0.1, create a release tagged `v1.0.1` and upload the APK, three ZIPs, `SHA256SUMS.txt` and `VERSION.json` from `dist/`. The README links directly to these release assets. No repository is created or pushed automatically by these build commands.
+The source repository is [Dling11/share-me-rowell](https://github.com/Dling11/share-me-rowell). For version 1.0.1, create a release tagged `v1.0.1-r1` and upload the APK, three ZIPs, `SHA256SUMS.txt` and `VERSION.json` from `dist/`. The README links directly to these release assets. No repository is created or pushed automatically by these build commands.

@@ -2,6 +2,8 @@ $ErrorActionPreference='Stop'
 $projectRoot=(Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
 $dist=Join-Path $projectRoot 'dist'
 $version='1.0.1'
+$packagingRevision='r1'
+$releaseTag="v$version-$packagingRevision"
 $apk=Join-Path $dist "Share-Me-Rowell-$version.apk"
 $windows=Join-Path $dist 'Windows'
 foreach($required in @($apk,(Join-Path $windows 'Share-Me-Rowell.exe'),(Join-Path $windows 'QRCoder.dll'))){if(!(Test-Path -LiteralPath $required)){throw "Build first: missing $required"}}
@@ -30,7 +32,7 @@ Copy-Item -Path (Join-Path $projectRoot 'licenses\*.txt') -Destination (Join-Pat
 $androidGuide=@'
 SHARE-ME-ROWELL - Android
 
-1. Extract this ZIP, then tap Share-Me-Rowell-1.0.1.apk on Android 10 or newer.
+1. Extract this ZIP, open Share-Me-Rowell-Android, then tap Share-Me-Rowell-1.0.1.apk on Android 10 or newer.
 2. Allow your browser/file manager to install this APK if Android asks.
 3. Connect both devices to the same Wi-Fi or a phone hotspot.
 4. Sender: Send > Choose files. Receiver: Receive.
@@ -51,7 +53,7 @@ See README.md for complete instructions, supported features and limits.
 $windowsGuide=@'
 SHARE-ME-ROWELL - Windows 10/11, 64-bit
 
-Extract the complete ZIP into one folder, then open Share-Me-Rowell.exe.
+Extract the Windows ZIP, open Share-Me-Rowell, then open Share-Me-Rowell.exe.
 Keep QRCoder.dll and the Android folder beside the executable.
 
 PC to phone: Send files > Choose files. Phone: Receive > Scan sender's code.
@@ -77,12 +79,12 @@ New-Item -ItemType Directory -Force -Path $packageBase | Out-Null
 $stage=Join-Path $packageBase ([Guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Force -Path $stage | Out-Null
 try{
-    $phone=Join-Path $stage 'Android';New-Item -ItemType Directory -Path $phone | Out-Null
+    $phone=Join-Path $stage 'Share-Me-Rowell-Android';New-Item -ItemType Directory -Path $phone | Out-Null
     Copy-Item -LiteralPath $apk -Destination $phone
     $androidGuide | Set-Content -LiteralPath (Join-Path $phone 'START-HERE.txt') -Encoding UTF8
     Copy-Item -LiteralPath (Join-Path $projectRoot 'README.md'),(Join-Path $projectRoot 'LICENSE'),(Join-Path $projectRoot 'THIRD_PARTY_NOTICES.md') -Destination $phone
     Copy-Item -LiteralPath (Join-Path $projectRoot 'licenses') -Destination $phone -Recurse
-    $stagedWindows=Join-Path $stage 'Windows';New-Item -ItemType Directory -Path $stagedWindows | Out-Null
+    $stagedWindows=Join-Path $stage 'Share-Me-Rowell';New-Item -ItemType Directory -Path $stagedWindows | Out-Null
     foreach($name in @('Share-Me-Rowell.exe','QRCoder.dll','QRCoder-LICENSE.txt','LICENSE.txt','START-HERE.txt','THIRD_PARTY_NOTICES.md','Allow-Local-Network.ps1','Android','licenses')){Copy-Item -LiteralPath (Join-Path $windows $name) -Destination $stagedWindows -Recurse}
     Copy-Item -LiteralPath (Join-Path $projectRoot 'README.md') -Destination $stagedWindows
     foreach($destination in @($phone,$stagedWindows)){
@@ -91,15 +93,18 @@ try{
     $apkHash=(Get-FileHash -LiteralPath $apk -Algorithm SHA256).Hash.ToLowerInvariant()
     "$apkHash  Share-Me-Rowell-$version.apk" | Set-Content -LiteralPath (Join-Path $phone 'SHA256SUMS.txt') -Encoding ASCII
     "$apkHash  Android/Share-Me-Rowell.apk" | Set-Content -LiteralPath (Join-Path $stagedWindows 'SHA256SUMS.txt') -Encoding ASCII
-    Compress-Archive -Path (Join-Path $phone '*') -DestinationPath (Join-Path $dist "Share-Me-Rowell-Android-$version.zip") -Force
-    Compress-Archive -Path (Join-Path $stagedWindows '*') -DestinationPath (Join-Path $dist "Share-Me-Rowell-Windows-$version.zip") -Force
-    Compress-Archive -LiteralPath $phone,$stagedWindows -DestinationPath (Join-Path $dist "Share-Me-Rowell-Complete-$version.zip") -Force
+    Compress-Archive -LiteralPath $phone -DestinationPath (Join-Path $dist "Share-Me-Rowell-Android-$version.zip") -Force
+    Compress-Archive -LiteralPath $stagedWindows -DestinationPath (Join-Path $dist "Share-Me-Rowell-Windows-$version.zip") -Force
+    $complete=Join-Path $stage 'Complete\Share-Me-Rowell';New-Item -ItemType Directory -Path $complete -Force | Out-Null
+    Copy-Item -LiteralPath $phone -Destination (Join-Path $complete 'Android') -Recurse
+    Copy-Item -LiteralPath $stagedWindows -Destination (Join-Path $complete 'Windows') -Recurse
+    Compress-Archive -LiteralPath $complete -DestinationPath (Join-Path $dist "Share-Me-Rowell-Complete-$version.zip") -Force
     $artifacts=@()
     foreach($name in @("Share-Me-Rowell-$version.apk","Share-Me-Rowell-Android-$version.zip","Share-Me-Rowell-Windows-$version.zip","Share-Me-Rowell-Complete-$version.zip")){
         $file=Join-Path $dist $name
         $artifacts+=@{file=$name;bytes=(Get-Item -LiteralPath $file).Length;sha256=(Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash.ToLowerInvariant()}
     }
-    $metadata=[ordered]@{name='Share-Me-Rowell';version=$version;builtUtc=[DateTime]::UtcNow.ToString('o');android=@{package='com.rowell.shareme';minimumAndroid=10;targetSdk=35;signerCertificateSha256=$certificate};validation=@{androidJvmTestsPassed=$jvmPassed;androidLintErrors=$lintErrors;windowsIntegrationChecksPassed=$testReport.passed;renderedQrDecoded=$qrReport.passed;installedOnPhone=$false;phoneTests='Pending; user deferred device testing';multiGigabytePhysicalTransfer='Not benchmarked; 64-bit metadata and streaming tested locally'};artifacts=$artifacts}
+    $metadata=[ordered]@{name='Share-Me-Rowell';version=$version;packagingRevision=$packagingRevision;releaseTag=$releaseTag;archiveFolders=@{windows='Share-Me-Rowell/';android='Share-Me-Rowell-Android/';complete='Share-Me-Rowell/'};builtUtc=[DateTime]::UtcNow.ToString('o');android=@{package='com.rowell.shareme';minimumAndroid=10;targetSdk=35;signerCertificateSha256=$certificate};validation=@{androidJvmTestsPassed=$jvmPassed;androidLintErrors=$lintErrors;windowsIntegrationChecksPassed=$testReport.passed;renderedQrDecoded=$qrReport.passed;installedOnPhone=$false;phoneTests='Pending; user deferred device testing';multiGigabytePhysicalTransfer='Not benchmarked; 64-bit metadata and streaming tested locally'};artifacts=$artifacts}
     $metadata | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $dist 'VERSION.json') -Encoding UTF8
     $artifacts | ForEach-Object {$_.sha256+'  '+$_.file} | Set-Content -LiteralPath (Join-Path $dist 'SHA256SUMS.txt') -Encoding ASCII
     $artifacts | ForEach-Object {$_.file+' ('+$_.bytes+' bytes)'}
