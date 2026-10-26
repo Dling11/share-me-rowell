@@ -1,0 +1,15 @@
+.local/
+dist/
+**/.gradle/
+**/build/
+**/bin/
+**/obj/
+**/local.properties
+*.jks
+*.keystore
+*.pfx
+*.part
+*.user
+.idea/
+.vscode/
+Thumbs.db
