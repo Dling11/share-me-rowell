@@ -29,6 +29,8 @@ namespace ShareMeRowell {
     }
     public sealed class SoftButton:Button {
         public bool Primary,Selected,Ghost;
+        public string Glyph;
+        public bool AlignLeft;
         private bool hover;
         public SoftButton(){FlatStyle=FlatStyle.Flat;FlatAppearance.BorderSize=0;Cursor=Cursors.Hand;Font=Palette.Font(10,true);Height=46;DoubleBuffered=true;BackColor=Palette.Card;}
         protected override void OnMouseEnter(EventArgs e){hover=true;Invalidate();base.OnMouseEnter(e);}
@@ -39,7 +41,23 @@ namespace ShareMeRowell {
             Color fill=Primary?Palette.Mint:(Selected?Color.FromArgb(30,60,65):(hover?Palette.Raised:Ghost?BackColor:Palette.Card));
             if(!Enabled)fill=Palette.Raised;
             using(var path=Palette.Round(new RectangleF(1,1,Width-3,Height-3),13))using(var brush=new SolidBrush(fill))using(var pen=new Pen(Primary||Selected||Ghost?fill:Palette.Border,1)){e.Graphics.FillPath(brush,path);e.Graphics.DrawPath(pen,path);}
-            TextRenderer.DrawText(e.Graphics,Text,Font,ClientRectangle,!Enabled?Palette.Muted:Primary?Palette.Page:Selected?Palette.Mint:Palette.Text,TextFormatFlags.HorizontalCenter|TextFormatFlags.VerticalCenter|TextFormatFlags.EndEllipsis);
+            Color ink=!Enabled?Palette.Muted:Primary?Palette.Page:Selected?Palette.Mint:Palette.Text;
+            var textBox=ClientRectangle;
+            if(!string.IsNullOrEmpty(Glyph)){
+                using(var pen=new Pen(ink,1.9f)){
+                    pen.StartCap=pen.EndCap=LineCap.Round;pen.LineJoin=LineJoin.Round;
+                    var old=e.Graphics.Save();float scale=e.Graphics.DpiX/96f;e.Graphics.TranslateTransform(18*scale,(Height-22*scale)/2f);e.Graphics.ScaleTransform(scale,scale);
+                    if(Glyph=="send"){e.Graphics.DrawLine(pen,3,18,19,2);e.Graphics.DrawLines(pen,new[]{new Point(7,2),new Point(19,2),new Point(19,14)});}
+                    else if(Glyph=="receive"){e.Graphics.DrawLine(pen,11,2,11,15);e.Graphics.DrawLines(pen,new[]{new Point(5,9),new Point(11,15),new Point(17,9)});e.Graphics.DrawLines(pen,new[]{new Point(2,16),new Point(2,20),new Point(20,20),new Point(20,16)});}
+                    else if(Glyph=="history"){e.Graphics.DrawArc(pen,3,3,17,17,205,300);e.Graphics.DrawLines(pen,new[]{new Point(2,2),new Point(2,8),new Point(8,8)});e.Graphics.DrawLines(pen,new[]{new Point(12,6),new Point(12,12),new Point(16,14)});}
+                    else if(Glyph=="phone"){e.Graphics.DrawRectangle(pen,5,1,12,20);e.Graphics.DrawLine(pen,9,17,13,17);}
+                    else if(Glyph=="add"){e.Graphics.DrawLine(pen,11,3,11,19);e.Graphics.DrawLine(pen,3,11,19,11);}
+                    e.Graphics.Restore(old);
+                }
+                int left=(int)(50*e.Graphics.DpiX/96f);textBox=new Rectangle(left,0,Math.Max(1,Width-left-8),Height);
+            }
+            TextRenderer.DrawText(e.Graphics,Text,Font,textBox,ink,(AlignLeft?TextFormatFlags.Left:TextFormatFlags.HorizontalCenter)|TextFormatFlags.VerticalCenter|TextFormatFlags.EndEllipsis|TextFormatFlags.NoPrefix);
+            if(Focused&&ShowFocusCues)ControlPaint.DrawFocusRectangle(e.Graphics,new Rectangle(5,5,Width-10,Height-10),ink,fill);
         }
     }
     public sealed class TransferBar:Control {

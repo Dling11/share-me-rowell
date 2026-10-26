@@ -11,4 +11,4 @@ New-Item -ItemType Directory -Force -Path $GradleCache | Out-Null
 if ($LASTEXITCODE -ne 0) { throw 'Android build failed.' }
 $dist = Join-Path $projectRoot 'dist'
 New-Item -ItemType Directory -Force -Path $dist | Out-Null
-Copy-Item -LiteralPath (Join-Path $projectRoot 'android\app\build\outputs\apk\release\app-release.apk') -Destination (Join-Path $dist 'Share-Me-Rowell-1.0.1.apk')
+Copy-Item -LiteralPath (Join-Path $projectRoot 'android\app\build\outputs\apk\release\app-release.apk') -Destination (Join-Path $dist 'Share-Me-Rowell-1.0.2.apk')

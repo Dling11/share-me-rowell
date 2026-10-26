@@ -22,6 +22,8 @@ class TransferService:Service(){
     private var networkCallback:ConnectivityManager.NetworkCallback?=null
     private lateinit var wake:PowerManager.WakeLock
     @Volatile private var live=true
+    private var preparation:Job?=null
+    @Volatile private var preparationVersion=0L
     override fun onCreate(){
         super.onCreate()
         val manager=getSystemService(NotificationManager::class.java)
@@ -37,14 +39,19 @@ class TransferService:Service(){
         when(intent.action){
             "stop"->stopSelf()
             "disconnect"->{if(Model.value.connection.phase.active)disconnectCurrent("Disconnected. Scan again to resume an unfinished file.")}
+            "cancel_preparation"->{if(Model.value.preparing){preparationVersion++;Model.epochs.next();preparation?.cancel();preparation=null;Model.set{it.copy(preparing=false,busy=false,current="",done=0,total=0,fileIndex=0,fileCount=0,status="Preparation cancelled. Your existing selection is kept.")};if(Model.value.files.isNotEmpty()&&Transport.addresses().first()!="127.0.0.1")startServer("send")}}
+            "clear_selection"->{if(!Model.value.busy){resetTransport();Model.set{it.copy(files=emptyList(),status="Selection cleared. Your original files stay on this phone.")}}}
+            "remove_file"->{if(!Model.value.busy){val id=intent.getStringExtra("id");resetTransport();Model.set{it.copy(files=it.files.filterNot{file->file.meta.id==id},status="Removed from selection. The original file stays on this phone.")};if(Model.value.files.isNotEmpty()&&Transport.addresses().first()!="127.0.0.1")startServer("send")}}
             "prepare"->{
                 if(Model.value.busy)return START_NOT_STICKY
-                val uris=intent.getStringArrayListExtra("uris").orEmpty().map(Uri::parse)
-                require(uris.size in 1..16)
-                resetTransport();Model.set{it.copy(busy=true,status="Preparing files…",mode="send")}
-                scope.launch{try{val files=withContext(Dispatchers.IO){uris.map{ReceiveStore.prepare(this@TransferService,it){ensureActive()}}};Model.set{it.copy(files=files,busy=false,status="Files ready.")};if(Transport.addresses().any{it!="127.0.0.1"})startServer("send") else Model.update(status="Files ready. Connect to Wi-Fi, create a hotspot or use Android sharing.")}
+                val existing=Model.value.files
+                val uris=intent.getStringArrayListExtra("uris").orEmpty().map(Uri::parse).distinct().filter{uri->existing.none{it.uri==uri}}
+                if(uris.isEmpty()){Model.update(status="Those files are already selected.");return START_NOT_STICKY}
+                if(existing.size+uris.size>16){Model.update(status="Choose up to 16 files per batch.");return START_NOT_STICKY}
+                resetTransport();val version=++preparationVersion;val epoch=Model.epochs.next();Model.set{it.copy(busy=true,preparing=true,status="Preparing files. Nothing sent yet.",mode="send")}
+                preparation=scope.launch{try{val files=withContext(Dispatchers.IO){uris.mapIndexed{index,uri->ReceiveStore.prepare(this@TransferService,uri,checkCancelled={ensureActive()},progress={name,done,total->Model.epochs.update(epoch){if(live)Model.set{it.copy(current=name,done=done,total=total.coerceAtLeast(0),fileIndex=index+1,fileCount=uris.size,status="Preparing file ${index+1} of ${uris.size}. Nothing sent yet.")}}})}};if(preparationVersion!=version)return@launch;preparation=null;Model.set{it.copy(files=existing+files,busy=false,preparing=false,current="",done=0,total=0,fileIndex=0,fileCount=0,status="Files ready. Review your selection. Nothing sent yet.")};if(Transport.addresses().any{it!="127.0.0.1"})startServer("send") else Model.update(status="Files ready. Connect to Wi-Fi, create a hotspot or use Android sharing.")}
                 catch(e:CancellationException){throw e}
-                catch(e:Exception){Model.set{it.copy(busy=false,status=e.message?:"Could not prepare those files.")}}}
+                catch(e:Exception){if(preparationVersion==version){preparation=null;Model.set{it.copy(busy=false,preparing=false,status=e.message?:"Could not read these files. Choose them again.")}}}}
             }
             "send"->startServer("send")
             "receive"->startServer("receive")
@@ -54,7 +61,7 @@ class TransferService:Service(){
         }
         return START_NOT_STICKY
     }
-    private fun resetTransport(){Model.epochs.next();transport?.close();transport=null;Model.set{it.copy(pairing=null,approval=null,busy=false,current="",done=0,total=0,connection=PeerConnection())}}
+    private fun resetTransport(){Model.epochs.next();transport?.close();transport=null;Model.set{it.copy(pairing=null,approval=null,busy=false,current="",done=0,total=0,fileIndex=0,fileCount=0,connection=PeerConnection())}}
     private fun disconnectCurrent(message:String,failed:Boolean=false){val peer=Model.value.connection;resetTransport();networkCallback?.let{runCatching{getSystemService(ConnectivityManager::class.java).unregisterNetworkCallback(it)}};networkCallback=null;Model.set{it.copy(connection=if(failed)peer.advance(ConnectionPhase.FAILED)else peer.disconnect(),status=message)}}
     private fun startServer(mode:String){
         if(Model.value.busy)return
@@ -69,7 +76,7 @@ class TransferService:Service(){
         val worker=Transport(this);transport=worker
         Model.set{it.copy(connection=PeerConnection.begin(pair.name))}
         val connectivity=getSystemService(ConnectivityManager::class.java)
-        fun begin(network:Network?){if(live&&transport===worker)worker.connect(pair,if(pair.mode=="receive")Model.value.files else emptyList(),network)}
+        fun begin(network:Network?){if(live&&transport===worker){val routes=network?.let{connectivity.getLinkProperties(it)?.routes?.filter{route->!route.isDefaultRoute}};val sameSubnet=routes?.takeIf{it.isNotEmpty()}?.any{route->pair.hosts.any{host->runCatching{route.destination.contains(java.net.InetAddress.getByName(host))}.getOrDefault(false)}};worker.connect(pair,if(pair.mode=="receive")Model.value.files else emptyList(),network,sameSubnet)}}
         val existing=wifiForHosts(this,pair.hosts)
         if(pair.ssid.isEmpty()||existing!=null){
             val wifi=existing?:connectivity.allNetworks.firstOrNull{connectivity.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)==true}
@@ -114,9 +121,9 @@ class TransferService:Service(){
         return NotificationCompat.Builder(this,"sharing").setSmallIcon(com.rowell.shareme.R.drawable.ic_stat_shareme).setContentTitle("Share-Me-Rowell").setContentText(text).setContentIntent(open).setOngoing(true).addAction(0,"Stop",stop).build()
     }
     override fun onDestroy(){
-        live=false;Model.epochs.next()
+        live=false;preparationVersion++;Model.epochs.next()
         transport?.close();installer?.close();hotspot?.close();networkCallback?.let{runCatching{getSystemService(ConnectivityManager::class.java).unregisterNetworkCallback(it)}}
-        scope.cancel();if(wake.isHeld)wake.release();Model.set{it.copy(mode="",pairing=null,busy=false,approval=null,appUrl="",ssid="",password="",active=false,status="Sharing stopped. Partial files can resume when you scan again.",connection=it.connection.disconnect())};super.onDestroy()
+        scope.cancel();if(wake.isHeld)wake.release();Model.set{it.copy(mode="",pairing=null,busy=false,preparing=false,approval=null,appUrl="",ssid="",password="",active=false,status="Sharing stopped. Partial files can resume when you scan again.",connection=it.connection.disconnect())};super.onDestroy()
     }
     companion object{
         fun wifiForHosts(context:Context,hosts:List<String>):Network?{

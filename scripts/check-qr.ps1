@@ -6,6 +6,7 @@ New-Item -ItemType Directory -Force -Path $preview | Out-Null
 $capture=Start-Process -FilePath (Join-Path $projectRoot 'dist\Windows\Share-Me-Rowell.exe') -ArgumentList @('--capture',('"'+$preview+'"')) -WindowStyle Hidden -PassThru
 if(!$capture.WaitForExit(20000)){$capture.Kill();throw 'Preview capture timed out'}
 if($capture.ExitCode -ne 0){throw 'Preview capture failed'}
+Copy-Item -LiteralPath (Join-Path $preview 'ui-checks.json') -Destination (Join-Path $projectRoot '.local\windows-ui-checks.json')
 $decoder=Get-ChildItem -LiteralPath (Join-Path $GradleCache 'caches\modules-2\files-2.1\com.google.zxing\core\3.5.3') -Filter 'core-3.5.3.jar' -Recurse | Select-Object -First 1
 if(!$decoder){throw 'Build Android first to obtain the pinned ZXing decoder.'}
 Copy-Item -LiteralPath $decoder.FullName -Destination (Join-Path $projectRoot '.local\zxing-core.jar')

@@ -2,7 +2,7 @@
 
 Offline file sharing for **Android and Windows**, by Rowell. Send APKs, ISOs, ZIPs, photos, videos and other files over the same Wi-Fi or a phone hotspot. No account or cloud service is needed.
 
-**[Download Android APK](https://github.com/Dling11/share-me-rowell/releases/download/v1.0.1-r1/Share-Me-Rowell-1.0.1.apk)** · **[Download Windows ZIP](https://github.com/Dling11/share-me-rowell/releases/download/v1.0.1-r1/Share-Me-Rowell-Windows-1.0.1.zip)** · [All downloads](https://github.com/Dling11/share-me-rowell/releases/tag/v1.0.1-r1)
+**[Download Android APK](https://github.com/Dling11/share-me-rowell/releases/download/v1.0.2/Share-Me-Rowell-1.0.2.apk)** · **[Download Windows ZIP](https://github.com/Dling11/share-me-rowell/releases/download/v1.0.2/Share-Me-Rowell-Windows-1.0.2.zip)** · [All downloads](https://github.com/Dling11/share-me-rowell/releases/tag/v1.0.2)
 
 Android 10+ · Windows 10/11, 64-bit · **Preview release: real-phone testing is pending.**
 
@@ -12,14 +12,16 @@ A dark navy interface with mint accents, clear Send/Receive actions and a matchi
 
 ![Windows dark interface](assets/windows-dark.png)
 
+![Review selected files before sending](assets/windows-selection.png)
+
 ## Downloads
 
 | Device | Download |
 | --- | --- |
-| Android 10+ | [Installable APK](https://github.com/Dling11/share-me-rowell/releases/download/v1.0.1-r1/Share-Me-Rowell-1.0.1.apk) |
-| Android, with instructions | [Android ZIP](https://github.com/Dling11/share-me-rowell/releases/download/v1.0.1-r1/Share-Me-Rowell-Android-1.0.1.zip) |
-| Windows 10/11, 64-bit | [Portable Windows ZIP](https://github.com/Dling11/share-me-rowell/releases/download/v1.0.1-r1/Share-Me-Rowell-Windows-1.0.1.zip) |
-| Both platforms | [Complete package](https://github.com/Dling11/share-me-rowell/releases/download/v1.0.1-r1/Share-Me-Rowell-Complete-1.0.1.zip) |
+| Android 10+ | [Installable APK](https://github.com/Dling11/share-me-rowell/releases/download/v1.0.2/Share-Me-Rowell-1.0.2.apk) |
+| Android, with instructions | [Android ZIP](https://github.com/Dling11/share-me-rowell/releases/download/v1.0.2/Share-Me-Rowell-Android-1.0.2.zip) |
+| Windows 10/11, 64-bit | [Portable Windows ZIP](https://github.com/Dling11/share-me-rowell/releases/download/v1.0.2/Share-Me-Rowell-Windows-1.0.2.zip) |
+| Both platforms | [Complete package](https://github.com/Dling11/share-me-rowell/releases/download/v1.0.2/Share-Me-Rowell-Complete-1.0.2.zip) |
 
 Use these release assets to install the apps. GitHub's **Source code (zip)** is for developers. Checksums, instructions and validation status accompany the packages. Each ZIP has one outer folder to keep its contents together. The Windows ZIP also includes the exact Android APK for its local download QR.
 
@@ -27,7 +29,7 @@ Use these release assets to install the apps. GitHub's **Source code (zip)** is 
 
 1. **Install:** on Android, download and tap the APK; approve installation from your browser/file manager if asked. On Windows, extract the ZIP, open its **Share-Me-Rowell** folder, then open **Share-Me-Rowell.exe**.
 2. **Connect:** put both devices on the same Wi-Fi/router or phone hotspot. No USB cable is needed. A normal Wi-Fi/hotspot transfer does not need internet access.
-3. **Choose:** open **Send → Choose files** on the sender and **Receive** on the receiver. On Windows these are **Send files** and **Receive files**.
+3. **Choose:** open **Send → Add files** on the sender and **Receive** on the receiver. Review filenames, sizes and the total; use **Add more files**, **Remove** or **Clear selection** as needed. On Windows the pages are **Send files** and **Receive files**.
 4. **Pair:** show a sender or receiver code on one device, then scan it from the opposite screen on the phone. For a PC transfer, always scan the PC's code with the phone.
 5. **Approve:** accept the prompts and wait for **Transfer complete**. Received files are in **Downloads/SHARE-ME-ROWELL**.
 
@@ -37,7 +39,7 @@ If the other phone does not have the app yet, download the APK above, or use **H
 
 1. Extract the Windows ZIP, open the **Share-Me-Rowell** folder, then open **Share-Me-Rowell.exe**. Keep `QRCoder.dll` beside it.
 2. Connect the PC and phone to the same Wi-Fi. A PC on Ethernet also works when connected to the same router.
-3. On the PC, select **Send files → Choose files**, or drag files into the list. File checksums are prepared first.
+3. On the PC, select **Send files → Add files**, or drag files into the list. Preparation shows progress and can be cancelled. Review the selected-file list before pairing.
 4. On the phone, open Share-Me-Rowell → **Receive → Scan sender's code**. Scan the PC's QR code.
 5. Approve the request on the PC, then accept the files on the phone. Completed files appear in **Downloads/SHARE-ME-ROWELL**.
 
@@ -46,7 +48,7 @@ For the first phone installation, the Windows app's **Get the phone app** button
 ## Phone → PC
 
 1. On the PC, select **Receive files**.
-2. On the phone, select **Send → Choose files → Scan receiver's code**.
+2. On the phone, select **Send → Add files**, review the selection, then tap **Scan receiver's code**.
 3. Scan the PC's code and approve the request on the PC.
 4. Files appear in the PC's **Downloads\SHARE-ME-ROWELL** folder. **Open receive folder** takes you there.
 
@@ -70,7 +72,7 @@ Mobile data and internet access are unnecessary for local transfers. Both device
 
 After pairing, a device card shows the other phone/PC's name and the current stage: **Connecting**, **Waiting for approval**, **Sending/Receiving** or **Verifying**. Windows shows this card at the bottom; Android shows it above the current page's actions.
 
-**Disconnect** stops the current connection after confirmation. Unfinished files remain available to resume when you scan and send them again. On Android, it keeps your local hotspot running; **Stop sharing & hotspot** closes that too.
+**Cancel preparation** stops reading the new files before sending and retains the previous selection. **Remove/Clear selection** changes only the list; originals stay on your device. During copying, **Cancel transfer** stops the connection after confirmation. Unfinished files remain available to resume when you scan and send them again. During connection/approval the button is **Disconnect**. On Android, it keeps your local hotspot running; **Stop sharing & hotspot** closes that too.
 
 Each connection lasts for one batch. The card changes to **Finished · disconnected**, **Declined · disconnected**, **Disconnected** or **Connection ended** afterward. A new scan starts another batch; the app does not keep an idle connection open. Pairing uses QR codes, without automatic nearby-device discovery. Internet transfers between different locations are not included.
 
@@ -82,11 +84,13 @@ Each connection lasts for one batch. The card changes to **Finished · disconnec
 - **Stop sharing** closes the listener/connections and any hotspot created by the app. Android shows an ongoing notification while sharing is active. Device power management can still interrupt long transfers; retry/resume is available.
 - **Home → Remove unfinished downloads** frees Android storage used by interrupted transfers. Completed downloads remain. Windows partial files are in the receive folder's `.shareme-parts` directory.
 - Open **History → Install APK** for a received APK. If Android asks, allow installation from Share-Me-Rowell, return and tap Install APK again. Nothing installs automatically.
-- Direct folder selection, automatic nearby-device discovery and an integrated Bluetooth progress engine are not included in 1.0.1. ZIP a folder before sending it.
+- Direct folder selection, automatic nearby-device discovery and an integrated Bluetooth progress engine are not included in 1.0.2. ZIP a folder before sending it.
 
 ## Windows connection help
 
 Keep both devices on your trusted local network. If Windows Firewall asks, allow the app for that network. If the phone still times out, `Allow-Local-Network.ps1` in the Windows ZIP can add a rule limited to this executable, TCP ports 48290/48291 and local-subnet peers. It requires administrator rights. It does not disable the firewall.
+
+Windows defaults to **Automatic (recommended)**, advertises usable local addresses and refreshes pairing when the local network changes. WSL/Docker adapters appear only under **Advanced network options**. The Android client tries the QR's alternative addresses and explains refusal, timeout, security failure or a peer's busy/expired-code response. A subnet hint indicates a possible adapter/network mismatch; it does not claim to know that two devices use different Wi-Fi names.
 
 ## Source and building
 
@@ -97,6 +101,6 @@ Keep both devices on your trusted local network. If Windows Firewall asks, allow
 
 See [build instructions](docs/BUILD.md) and [protocol notes](docs/PROTOCOL.md). Signing keys, caches, received files and build outputs are excluded from source history. Keep the Android signing key private and backed up to retain update compatibility.
 
-Version 1.0.1 passed 18 Android JVM tests, Android lint with no errors, 18 Windows loopback transfer/installer checks, and decoding of the displayed Windows QR. These include completion/decline status, cancelling pending approval, disconnect/resume and protection against late status updates. **Real-phone testing is pending**: Android UI, Wi-Fi/hotspot interoperability, Bluetooth and background behavior still need device checks. Multi-gigabyte throughput has not been benchmarked; the size test verifies 64-bit metadata handling.
+Version 1.0.2 passed **24 Android JVM tests**, Android lint with no errors, **18 Windows loopback transfer/installer checks**, **5 Windows network/preparation checks**, **7 checks of the actual Windows selection/Advanced controls**, and decoding of the displayed Windows QR. The owner confirmed an Android-to-PC Wi-Fi transfer on 1.0.1 after selecting the correct LAN address. **Version 1.0.2 phone testing is pending**, including the new Android UI, hotspot, Bluetooth and background behavior. Multi-gigabyte throughput has not been benchmarked; the size test verifies 64-bit metadata handling.
 
 Original Share-Me-Rowell application code is MIT-licensed. It is an independent project. Third-party libraries and their licences are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

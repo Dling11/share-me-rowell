@@ -76,10 +76,12 @@ class ReceiveStore(private val context: Context) {
         prefs.all.filterKeys{it.startsWith("part-")}.forEach{(key,value)->runCatching {resolver.delete(Uri.parse(value as String),null,null)};prefs.edit().remove(key).commit()}
     }
     companion object {
-        fun prepare(context: Context, uri: Uri, checkCancelled:()->Unit={}): Prepared {
-            val name=context.contentResolver.query(uri,arrayOf(OpenableColumns.DISPLAY_NAME),null,null,null)?.use{if(it.moveToFirst())it.getString(0) else null} ?: "Shared file"
+        fun prepare(context: Context, uri: Uri, checkCancelled:()->Unit={},progress:(String,Long,Long)->Unit={_,_,_->}): Prepared {
+            val details=context.contentResolver.query(uri,arrayOf(OpenableColumns.DISPLAY_NAME,OpenableColumns.SIZE),null,null,null)?.use{cursor->if(cursor.moveToFirst())Pair(cursor.getString(0)?:"Shared file",if(cursor.isNull(1))-1L else cursor.getLong(1))else null}?:Pair("Shared file",-1L)
+            val name=details.first;var updated=0L;progress(name,0,details.second)
             var size=0L;val digest=java.security.MessageDigest.getInstance("SHA-256")
-            context.contentResolver.openInputStream(uri)?.use{input->val buffer=ByteArray(256*1024);while(true){checkCancelled();val count=input.read(buffer);if(count<0)break;size+=count;require(size<=1024L*1024*1024*1024){"This file is too large."};digest.update(buffer,0,count)}} ?: error("Could not read the selected file.")
+            context.contentResolver.openInputStream(uri)?.use{input->val buffer=ByteArray(256*1024);while(true){checkCancelled();val count=input.read(buffer);if(count<0)break;size+=count;require(size<=1024L*1024*1024*1024){"This file is too large."};digest.update(buffer,0,count);val now=System.currentTimeMillis();if(now-updated>=150){updated=now;progress(name,size,details.second)}}} ?: error("Could not read the selected file.")
+            checkCancelled();progress(name,size,size)
             return Prepared(FileMeta(UUID.randomUUID().toString().replace("-",""),safeName(name),size,hex(digest.digest())),uri)
         }
     }

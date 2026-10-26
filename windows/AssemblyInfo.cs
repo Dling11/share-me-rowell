@@ -4,5 +4,5 @@ using System.Reflection;
 [assembly: AssemblyDescription("Local file sharing for Android and Windows")]
 [assembly: AssemblyCompany("Rowell")]
 [assembly: AssemblyCopyright("Copyright 2026 Rowell")]
-[assembly: AssemblyVersion("1.0.1.0")]
-[assembly: AssemblyFileVersion("1.0.1.0")]
+[assembly: AssemblyVersion("1.0.2.0")]
+[assembly: AssemblyFileVersion("1.0.2.0")]

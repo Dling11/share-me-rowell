@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import java.util.concurrent.CompletableFuture
 
 data class Approval(val name:String,val files:List<FileMeta>,val sending:Boolean,val answer:CompletableFuture<Boolean> = CompletableFuture())
-data class ScreenState(val status:String="Ready to share",val mode:String="",val pairing:Pairing?=null,val files:List<Prepared> = emptyList(),val busy:Boolean=false,val current:String="",val done:Long=0,val total:Long=0,val approval:Approval?=null,val history:List<History> = emptyList(),val appUrl:String="",val ssid:String="",val password:String="",val active:Boolean=false,val connection:PeerConnection=PeerConnection())
+data class ScreenState(val status:String="Ready to share",val mode:String="",val pairing:Pairing?=null,val files:List<Prepared> = emptyList(),val busy:Boolean=false,val current:String="",val done:Long=0,val total:Long=0,val approval:Approval?=null,val history:List<History> = emptyList(),val appUrl:String="",val ssid:String="",val password:String="",val active:Boolean=false,val connection:PeerConnection=PeerConnection(),val preparing:Boolean=false,val fileIndex:Int=0,val fileCount:Int=0)
 object Model {
     val epochs=SessionEpoch()
     private val mutable=MutableStateFlow(ScreenState())

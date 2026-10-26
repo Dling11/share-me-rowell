@@ -20,7 +20,7 @@ $compiler = 'C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe'
 if (!(Test-Path -LiteralPath $compiler)) { throw 'Windows .NET Framework compiler was not found. .NET Framework 4.8 is required.' }
 $iconPath = Join-Path $privateDir 'shareme.ico'
 $references = @('/reference:System.dll','/reference:System.Core.dll','/reference:System.Drawing.dll','/reference:System.Windows.Forms.dll','/reference:System.Security.dll','/reference:System.Web.Extensions.dll',('/reference:' + (Join-Path $output 'QRCoder.dll')))
-$sources = @('TransferCore.cs','ModernUi.cs','Program.cs','AssemblyInfo.cs') | ForEach-Object { Join-Path $projectRoot ('windows\' + $_) }
+$sources = @('TransferCore.cs','NetworkChoice.cs','ModernUi.cs','Program.cs','AssemblyInfo.cs') | ForEach-Object { Join-Path $projectRoot ('windows\' + $_) }
 $builder = Join-Path $privateDir 'ShareMe-IconBuilder.exe'
 Copy-Item -LiteralPath (Join-Path $output 'QRCoder.dll') -Destination (Join-Path $privateDir 'QRCoder.dll')
 & $compiler /nologo /target:winexe /platform:x64 /optimize+ /utf8output ('/out:' + $builder) @references @sources

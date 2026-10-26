@@ -88,9 +88,9 @@ class Transport(private val context:Context) : Closeable {
         }catch(e:Exception){if(!stopped&&owner){phase(if(e.message.orEmpty().contains("declined",true))ConnectionPhase.DECLINED else ConnectionPhase.FAILED);status(e.message?:"Connection interrupted. Scan again to resume.")}}
         finally{socket.close();connections.remove(socket);if(owner){synchronized(guard){claimed=false};state{it.copy(busy=false,approval=null)}}}
     }
-    fun connect(pair:Pairing,files:List<Prepared>,network:Network?=null) {
+    fun connect(pair:Pairing,files:List<Prepared>,network:Network?=null,sameSubnet:Boolean?=null) {
         if(stopped)return
-        synchronized(guard){check(!claimed){"Finish the current transfer first."};claimed=true}
+        synchronized(guard){if(claimed)return;claimed=true}
         try{executor.execute {
             var socket:SSLSocket?=null
             var rawClient:Socket?=null
@@ -103,8 +103,14 @@ class Transport(private val context:Context) : Closeable {
                 }
                 val ssl=SSLContext.getInstance("TLS").apply{init(null,arrayOf(trust),SecureRandom())}
                 var last:Exception?=null
-                for(host in pair.hosts){check(!stopped){"Sharing stopped."};try{val raw=network?.socketFactory?.createSocket()?:Socket();rawClient=raw;synchronized(connections){check(!stopped);connections+=raw};try{raw.connect(InetSocketAddress(host,pair.port),7000);socket=ssl.socketFactory.createSocket(raw,host,pair.port,true) as SSLSocket;socket!!.enabledProtocols=arrayOf("TLSv1.2");socket!!.soTimeout=600000;socket!!.startHandshake();break}catch(e:Exception){connections.remove(raw);raw.close();throw e}}catch(e:Exception){last=e}}
-                val channel=socket?:throw IOException("Could not connect. Use the same Wi-Fi/hotspot and check the PC firewall.",last)
+                for((index,host) in pair.hosts.withIndex()){
+                    check(!stopped){"Sharing stopped."};status("Connecting to ${pair.name} · address ${index+1} of ${pair.hosts.size}…")
+                    try{val raw=network?.socketFactory?.createSocket()?:Socket();rawClient=raw;synchronized(connections){check(!stopped);connections+=raw};var candidate:SSLSocket?=null
+                        try{raw.connect(InetSocketAddress(host,pair.port),7000);candidate=ssl.socketFactory.createSocket(raw,host,pair.port,true) as SSLSocket;candidate.enabledProtocols=arrayOf("TLSv1.2");candidate.soTimeout=600000;candidate.startHandshake();socket=candidate;break}
+                        catch(e:Exception){connections.remove(raw);runCatching{candidate?.close()};raw.close();throw e}
+                    }catch(e:Exception){if(last !is SSLException||e is SSLException)last=e}
+                }
+                val channel=socket?:throw(last?:ConnectException("The device could not be reached."))
                 connections+=channel
                 val input=BufferedInputStream(channel.inputStream,256*1024);val output=BufferedOutputStream(channel.outputStream,256*1024)
                 phase(ConnectionPhase.WAITING)
@@ -120,7 +126,7 @@ class Transport(private val context:Context) : Closeable {
                     if(!approve(pair.name,incoming,false)){phase(ConnectionPhase.DECLINED);status("Transfer declined.");Wire.write(output,reject("Transfer declined."));return@execute}
                     receive(input,output,incoming)
                 }
-            }catch(e:Exception){if(!stopped){phase(if(e.message.orEmpty().contains("declined",true))ConnectionPhase.DECLINED else ConnectionPhase.FAILED);status(e.message?:"Transfer interrupted. Scan again to resume.")}}
+            }catch(e:Exception){if(!stopped){phase(if(e.message.orEmpty().contains("declined",true))ConnectionPhase.DECLINED else ConnectionPhase.FAILED);status(ConnectionProblem.describe(e,pair.hosts.firstOrNull().orEmpty(),sameSubnet))}}
             finally{socket?.let{connections.remove(it);runCatching{it.close()}};rawClient?.let{connections.remove(it);runCatching{it.close()}};synchronized(guard){claimed=false};state{it.copy(busy=false,approval=null)}}
         }}catch(_:java.util.concurrent.RejectedExecutionException){synchronized(guard){claimed=false}}
     }
@@ -133,7 +139,7 @@ class Transport(private val context:Context) : Closeable {
         require(offsets.length()==files.size)
         files.forEachIndexed{index,source->
             val offset=offsets.getLong(index);require(offset in 0..source.meta.size)
-            state{it.copy(busy=true,current=source.meta.name,status="Sending…",done=offset,total=source.meta.size,connection=it.connection.advance(ConnectionPhase.SENDING))}
+            state{it.copy(busy=true,current=source.meta.name,status="Sending file ${index+1} of ${files.size}…",done=offset,total=source.meta.size,fileIndex=index+1,fileCount=files.size,connection=it.connection.advance(ConnectionPhase.SENDING))}
             var updated=0L
             source.open(context,offset).use{Wire.copy(it,output,source.meta.size-offset){done->if(System.currentTimeMillis()-updated>120||offset+done==source.meta.size){updated=System.currentTimeMillis();state{s->s.copy(done=offset+done)}}}}
             status("Waiting for file verification…")
@@ -147,7 +153,7 @@ class Transport(private val context:Context) : Closeable {
         val offsets=files.map{if(used.add(it.sha+it.size))store.offset(it) else 0L}
         Wire.write(output,JSONObject().put("ok",true).put("offsets",JSONArray(offsets)))
         files.forEachIndexed{index,file->
-            state{it.copy(busy=true,current=file.name,status="Receiving…",done=offsets[index],total=file.size,connection=it.connection.advance(ConnectionPhase.RECEIVING))}
+            state{it.copy(busy=true,current=file.name,status="Receiving file ${index+1} of ${files.size}…",done=offsets[index],total=file.size,fileIndex=index+1,fileCount=files.size,connection=it.connection.advance(ConnectionPhase.RECEIVING))}
             var updated=0L
             try {store.receive(file,offsets[index],input,{phase(ConnectionPhase.VERIFYING);status("Verifying ${file.name}…")},checkCancelled={check(!stopped){"Disconnected."}}){done->if(System.currentTimeMillis()-updated>120||done==file.size){updated=System.currentTimeMillis();state{it.copy(done=done)}}};Wire.write(output,JSONObject().put("ok",true).put("index",index))}
             catch(e:Exception){runCatching{Wire.write(output,reject(e.message?:"The file could not be received."))};throw e}

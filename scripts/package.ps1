@@ -1,14 +1,16 @@
 $ErrorActionPreference='Stop'
 $projectRoot=(Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
 $dist=Join-Path $projectRoot 'dist'
-$version='1.0.1'
-$packagingRevision='r1'
-$releaseTag="v$version-$packagingRevision"
+$version='1.0.2'
+$packagingRevision='standard'
+$releaseTag="v$version"
 $apk=Join-Path $dist "Share-Me-Rowell-$version.apk"
 $windows=Join-Path $dist 'Windows'
 foreach($required in @($apk,(Join-Path $windows 'Share-Me-Rowell.exe'),(Join-Path $windows 'QRCoder.dll'))){if(!(Test-Path -LiteralPath $required)){throw "Build first: missing $required"}}
 $testReport=Get-Content -LiteralPath (Join-Path $projectRoot '.local\windows-integration.json') -Raw | ConvertFrom-Json
 $qrReport=Get-Content -LiteralPath (Join-Path $projectRoot '.local\qr-check.json') -Raw | ConvertFrom-Json
+$windowsChecks=Get-Content -LiteralPath (Join-Path $projectRoot '.local\windows-checks.json') -Raw | ConvertFrom-Json
+$uiChecks=Get-Content -LiteralPath (Join-Path $projectRoot '.local\windows-ui-checks.json') -Raw | ConvertFrom-Json
 $verify=Get-Content -LiteralPath (Join-Path $projectRoot '.local\apk-verify.txt') -Raw
 $verifiedApk=Get-Content -LiteralPath (Join-Path $projectRoot '.local\apk-verify.json') -Raw | ConvertFrom-Json
 if(!$verifiedApk.verified -or $verifiedApk.sha256 -ne (Get-FileHash -LiteralPath $apk -Algorithm SHA256).Hash.ToLowerInvariant()){throw 'APK changed since signature verification. Run verify-android.ps1.'}
@@ -22,7 +24,7 @@ foreach($result in Get-ChildItem -LiteralPath (Join-Path $projectRoot 'android\a
 }
 [xml]$lint=Get-Content -LiteralPath (Join-Path $projectRoot 'android\app\build\reports\lint-results-release.xml') -Raw
 $lintErrors=@($lint.issues.issue | Where-Object {$_.severity -in @('Error','Fatal')}).Count
-if($lintErrors -ne 0 -or $jvmPassed -lt 18 -or $testReport.passed -lt 18 -or !$qrReport.passed){throw 'Required local checks are incomplete'}
+if($lintErrors -ne 0 -or $jvmPassed -lt 24 -or $testReport.passed -lt 18 -or $windowsChecks.passed -lt 5 -or $uiChecks.passed -lt 7 -or !$qrReport.passed){throw 'Required local checks are incomplete'}
 New-Item -ItemType Directory -Force -Path (Join-Path $windows 'Android') | Out-Null
 Copy-Item -LiteralPath $apk -Destination (Join-Path $windows 'Android\Share-Me-Rowell.apk')
 Copy-Item -LiteralPath (Join-Path $projectRoot 'scripts\Allow-Local-Network.ps1') -Destination $windows
@@ -32,10 +34,10 @@ Copy-Item -Path (Join-Path $projectRoot 'licenses\*.txt') -Destination (Join-Pat
 $androidGuide=@'
 SHARE-ME-ROWELL - Android
 
-1. Extract this ZIP, open Share-Me-Rowell-Android, then tap Share-Me-Rowell-1.0.1.apk on Android 10 or newer.
+1. Extract this ZIP, open Share-Me-Rowell-Android, then tap Share-Me-Rowell-1.0.2.apk on Android 10 or newer.
 2. Allow your browser/file manager to install this APK if Android asks.
 3. Connect both devices to the same Wi-Fi or a phone hotspot.
-4. Sender: Send > Choose files. Receiver: Receive.
+4. Sender: Send > Add files. Review names/sizes; Receiver: Receive.
 5. Show a sender/receiver code on one device; scan it from the opposite screen.
 6. Approve the files. Received files appear in Downloads/SHARE-ME-ROWELL.
 
@@ -56,8 +58,8 @@ SHARE-ME-ROWELL - Windows 10/11, 64-bit
 Extract the Windows ZIP, open Share-Me-Rowell, then open Share-Me-Rowell.exe.
 Keep QRCoder.dll and the Android folder beside the executable.
 
-PC to phone: Send files > Choose files. Phone: Receive > Scan sender's code.
-Phone to PC: Receive files. Phone: Send > Choose files > Scan receiver's code.
+PC to phone: Send files > Add files. Review the list. Phone: Receive > Scan sender's code.
+Phone to PC: Receive files. Phone: Send > Add files > Scan receiver's code.
 Approve the transfer requests. Both devices need the same Wi-Fi/router/hotspot.
 Files arrive in Downloads\SHARE-ME-ROWELL. Existing files are kept.
 The device card at the bottom shows the peer and live transfer stage.
@@ -104,7 +106,7 @@ try{
         $file=Join-Path $dist $name
         $artifacts+=@{file=$name;bytes=(Get-Item -LiteralPath $file).Length;sha256=(Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash.ToLowerInvariant()}
     }
-    $metadata=[ordered]@{name='Share-Me-Rowell';version=$version;packagingRevision=$packagingRevision;releaseTag=$releaseTag;archiveFolders=@{windows='Share-Me-Rowell/';android='Share-Me-Rowell-Android/';complete='Share-Me-Rowell/'};builtUtc=[DateTime]::UtcNow.ToString('o');android=@{package='com.rowell.shareme';minimumAndroid=10;targetSdk=35;signerCertificateSha256=$certificate};validation=@{androidJvmTestsPassed=$jvmPassed;androidLintErrors=$lintErrors;windowsIntegrationChecksPassed=$testReport.passed;renderedQrDecoded=$qrReport.passed;installedOnPhone=$false;phoneTests='Pending; user deferred device testing';multiGigabytePhysicalTransfer='Not benchmarked; 64-bit metadata and streaming tested locally'};artifacts=$artifacts}
+    $metadata=[ordered]@{name='Share-Me-Rowell';version=$version;packagingRevision=$packagingRevision;releaseTag=$releaseTag;archiveFolders=@{windows='Share-Me-Rowell/';android='Share-Me-Rowell-Android/';complete='Share-Me-Rowell/'};builtUtc=[DateTime]::UtcNow.ToString('o');android=@{package='com.rowell.shareme';minimumAndroid=10;targetSdk=35;signerCertificateSha256=$certificate};validation=@{androidJvmTestsPassed=$jvmPassed;androidLintErrors=$lintErrors;windowsIntegrationChecksPassed=$testReport.passed;windowsUnitChecksPassed=$windowsChecks.passed;windowsUiChecksPassed=$uiChecks.passed;renderedQrDecoded=$qrReport.passed;installedOnPhone=$false;phoneTests='Version 1.0.2 device checks pending; owner confirmed Android-to-PC Wi-Fi transfer on 1.0.1';multiGigabytePhysicalTransfer='Not benchmarked; 64-bit metadata and streaming tested locally'};artifacts=$artifacts}
     $metadata | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $dist 'VERSION.json') -Encoding UTF8
     $artifacts | ForEach-Object {$_.sha256+'  '+$_.file} | Set-Content -LiteralPath (Join-Path $dist 'SHA256SUMS.txt') -Encoding ASCII
     $artifacts | ForEach-Object {$_.file+' ('+$_.bytes+' bytes)'}

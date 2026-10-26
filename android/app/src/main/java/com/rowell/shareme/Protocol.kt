@@ -92,7 +92,7 @@ object Wire {
         require(files.map { it.id }.distinct().size == files.size) { "Duplicate file IDs." }
         return files
     }
-    fun success(json: JSONObject) { check(json.optBoolean("ok")) { json.optString("error", "The other device declined the transfer.") } }
+    fun success(json: JSONObject) { if(!json.optBoolean("ok"))throw PeerRejected(json.optString("error", "The other device declined the transfer.")) }
     fun copy(input: InputStream, output: OutputStream, size: Long, progress: (Long) -> Unit = {}) {
         require(size >= 0); val buffer = ByteArray(256 * 1024); var done = 0L
         while (done < size) {
