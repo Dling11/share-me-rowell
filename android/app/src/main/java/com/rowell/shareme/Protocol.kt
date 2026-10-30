@@ -56,7 +56,7 @@ data class Pairing(val hosts: List<String>, val port: Int, val fingerprint: Stri
     }
     companion object {
         fun parse(text: String): Pairing {
-            require(text.length <= 8192 && text.startsWith("shareme-rowell://pair/")) { "Scan a Share-Me-Rowell pairing code." }
+            require(text.length <= 8192 && text.startsWith("shareme-rowell://pair/")) { "Scan a Share Mode pairing code." }
             val o = JSONObject(String(Base64.getUrlDecoder().decode(text.substringAfter("shareme-rowell://pair/")), Charsets.UTF_8))
             require(o.getInt("v") == 1)
             val hosts = o.getJSONArray("hosts").let { a -> (0 until a.length()).map { a.getString(it) } }

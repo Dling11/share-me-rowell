@@ -1,49 +1,49 @@
-# Build and publish
+# Build and package
 
-## Android
+All commands run inside this project. Leave the work Docker environment and Tri/MH4 projects and caches unchanged. The former shared Docker/MH4-cache workflow is superseded by this Windows workflow.
 
-The current PC reuses the existing `monster-hunter-tri-android:rowell` Docker image and Gradle 8.9/Gradle dependency cache from the MH4 project. It does not change MH4 source, APKs or saves. The Docker image supplies Java 21, Android SDK 35 and build-tools 35.0.0. No additional Windows Android Studio install is required for this build.
+## Android on Windows
+
+Use JDK 17, Gradle 8.9, Android platform 35 and build-tools 35.0.0. Android Studio and Docker are unnecessary. The current machine has these tools in the ignored `.local/tools/` directory:
+
+- `.local/tools/jdk17/<jdk-directory>/bin/javac.exe`
+- `.local/tools/gradle-8.9/bin/gradle.bat`
+- `.local/tools/android-sdk/platforms/android-35/android.jar`
+- `.local/tools/android-sdk/build-tools/35.0.0/`
+- `.local/tools/android-sdk/platform-tools/` (optional adb for connected devices)
+
+On a new machine, obtain a Windows JDK from [Eclipse Adoptium](https://adoptium.net/temurin/releases/?version=17), [Gradle 8.9](https://services.gradle.org/distributions/gradle-8.9-bin.zip), and the listed SDK packages from [Android's official tools](https://developer.android.com/tools). Verify published checksums before extraction. The tools used here were checked against the JDK publisher's SHA256 and Google's SDK repository archive checksums. Gradle and dependency artifacts were copied read-only into this project; subsequent writes stay here.
 
 ```powershell
 .\scripts\build-android.ps1
+.\scripts\verify-android.ps1
 ```
 
-On another machine, supply an Android build image with those tools and an extracted official Gradle 8.9 distribution:
+For another local toolchain, pass `-JavaDirectory`, `-SdkDirectory` and `-GradleDirectory` to the build; verification accepts the first two. Dependencies and project state stay in `.local/gradle-local` and `.local/android-project-cache`. The ignored `android/local.properties` points to the chosen SDK.
 
-```powershell
-.\scripts\build-android.ps1 -DockerImage your-android-image -GradleDirectory C:\tools\gradle-8.9 -GradleCache C:\build-cache\shareme
-```
+The build runs JVM tests, assembles the optimized signed APK and runs release lint. Output: `dist/Share-Mode-1.0.3.apk`. Java's temporary socket directory is scoped to `.local/nio-temp` because this machine's normal temp directory rejects Java domain-socket connections. Process environment settings are restored afterward; Windows, network and Docker settings are unchanged.
 
-The first build generates the persistent private key `.local/signing/shareme.jks` and its password file. Back up both privately. Later builds use the same identity. Do not include them in GitHub source, ZIPs or error reports. The app ID is `com.rowell.shareme`, separate from both Monster Hunter apps.
+The existing private `.local/signing/shareme.jks` and password file are required. The build does not replace or regenerate them. Verification checks package `com.rowell.shareme`, version code 4, version name 1.0.3, label Share Mode, Android 10 minimum and SDK 35 target, then compares the signer with the previous release's certificate in `.local/signing/certificate-sha256.txt`. This text is a public certificate fingerprint; the keystore and password remain private. Restore the original private backup if signing files are missing.
 
 ## Windows
 
-Windows 10/11 with .NET Framework 4.8 and PowerShell:
-
 ```powershell
 .\scripts\build-windows.ps1
-```
-
-The script checks the SHA512 of QRCoder 1.8.1 before extracting its net40 DLL, then compiles using the installed .NET Framework C# compiler. QRCoder's MIT notice is included. The executable is a portable x64 app; extract its ZIP with the dependency DLL beside it.
-
-## Checks and packaging
-
-Android builds run JVM tests, assemble the release APK and run Android lint. On Windows:
-
-```powershell
 node .\tests\windows-integration.mjs
 .\scripts\check-windows.ps1
 .\scripts\check-qr.ps1
-.\scripts\verify-android.ps1
+```
+
+The installed .NET Framework compiler builds `dist/Windows/Share-Mode.exe`. The QRCoder 1.8.1 NuGet archive is SHA512-verified before extraction. Keep `QRCoder.dll` and its licence beside the executable.
+
+The integration harness uses loopback servers and isolated dummy files. It checks transfer framing, integrity failures, resume, cancellation, safe names, existing files and 64-bit sizes. Network/preparation checks and seven actual WinForms selection/Advanced-control checks run separately. `check-qr.ps1` captures the app off-screen and decodes its displayed QR using ZXing 3.5.3 with the project-local JDK. It uses no Docker or phone.
+
+## Packaging
+
+```powershell
 .\scripts\package.ps1
 ```
 
-The integration harness uses isolated dummy files and loopback-only headless servers. It exercises transfers, integrity failures, resume, safe names, existing files and 64-bit sizes. A size metadata test is not a physical multi-gigabyte throughput benchmark. Complete phone and hotspot tests before claiming broad device compatibility.
+Packaging requires successful test, lint, signature and QR reports. It creates separate Android, Windows and complete ZIPs with one outer folder each, plus `SHA256SUMS.txt` and `VERSION.json`. `verify-packages.ps1` checks archive checksums, outer folders, matching APK bytes, and exclusion of old installers and private/development files. Windows includes the same Android APK as the standalone download. Signing keys and caches are excluded.
 
-`check-qr.ps1` captures this app's own window off-screen, then checks the displayed receiver QR against its pairing session with ZXing 3.5.3. It uses the existing Docker image and the decoder cached by the Android build; it does not connect to a phone.
-
-Packaging puts the exact APK into Android, Windows and complete ZIPs, along with instructions, checksums, licence and third-party notices. `dist/VERSION.json` records actual validation status. Source ZIPs exclude `.local/`, `dist/`, build caches and keys.
-
-## GitHub download links
-
-The source repository is [Dling11/share-me-rowell](https://github.com/Dling11/share-me-rowell). For version 1.0.2, create a release tagged `v1.0.2` and upload the APK, three ZIPs, `SHA256SUMS.txt` and `VERSION.json` from `dist/`. The README links directly to these release assets. No repository is created or pushed automatically by these build commands.
+The repository is still [Dling11/share-me-rowell](https://github.com/Dling11/share-me-rowell). Build and packaging commands do not commit, push or publish. The owner-authorized 1.0.3 release uses the Share-Mode filenames linked in README; earlier releases retain their old names.

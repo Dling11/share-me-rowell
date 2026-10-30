@@ -1,6 +1,6 @@
 # Third-party notices
 
-Share-Me-Rowell's original application code and interface are by Rowell, under the root MIT licence. The project is independent and is not associated with SHAREit or Xiaomi ShareMe.
+Share Mode's original application code and interface are by Rowell, under the root MIT licence. The project is independent and is not associated with SHAREit or Xiaomi ShareMe.
 
 - **QRCoder 1.8.1**, maintained by the QRCoder contributors: Windows QR generation. MIT licence; the full notice is distributed beside the Windows DLL. Source: https://github.com/Shane32/QRCoder . Official NuGet package SHA512: `3Mg+aSoCNKz7w3OQ6KxpiNxEu6AgOE5lqsORNNu63heRdau9wM34IUCmtvkKDCCC2oraxxlOVTKX/HsXYAxHUw==`.
 - **ZXing Android Embedded 4.3.0**, JourneyApps and contributors: Android camera scanner. Apache License 2.0. Source: https://github.com/journeyapps/zxing-android-embedded .

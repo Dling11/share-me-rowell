@@ -29,7 +29,7 @@ $render = Start-Process -FilePath $builder -ArgumentList @('--render-icon',('"' 
 if (!$render.WaitForExit(15000)) { $render.Kill(); throw 'Icon render timed out' }
 if ($render.ExitCode -ne 0) { throw 'Icon render failed' }
 Copy-Item -LiteralPath (Join-Path $privateDir 'icon-preview.png') -Destination (Join-Path $projectRoot 'assets\icon-preview.png')
-& $compiler /nologo /target:winexe /platform:x64 /optimize+ /utf8output ("/win32icon:" + $iconPath) ("/win32manifest:" + (Join-Path $projectRoot 'windows\app.manifest')) ("/out:" + (Join-Path $output 'Share-Me-Rowell.exe')) @references @sources
+& $compiler /nologo /target:winexe /platform:x64 /optimize+ /utf8output ("/win32icon:" + $iconPath) ("/win32manifest:" + (Join-Path $projectRoot 'windows\app.manifest')) ("/out:" + (Join-Path $output 'Share-Mode.exe')) @references @sources
 if ($LASTEXITCODE -ne 0) { throw 'Windows build failed' }
 Copy-Item -LiteralPath (Join-Path $projectRoot 'LICENSE') -Destination (Join-Path $output 'LICENSE.txt')
-'Windows app built: ' + (Join-Path $output 'Share-Me-Rowell.exe')
+'Windows app built: ' + (Join-Path $output 'Share-Mode.exe')

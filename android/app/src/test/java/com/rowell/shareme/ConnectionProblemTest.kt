@@ -30,7 +30,7 @@ class ConnectionProblemTest{
     }
     @Test fun refusedConnectionSuggestsOpeningTheAppAndRefreshingTheCode(){
         val message=ConnectionProblem.describe(ConnectException(),sameSubnet=true)
-        assertTrue(message.contains("refused"));assertTrue(message.contains("Open Share-Me-Rowell"));assertTrue(message.contains("refresh"))
+        assertTrue(message.contains("refused"));assertTrue(message.contains("Open Share Mode"));assertTrue(message.contains("refresh"))
     }
     @Test fun interruptedStreamExplainsHowToResume(){assertTrue(ConnectionProblem.describe(EOFException()).contains("resume"))}
 }

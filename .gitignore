@@ -1,6 +1,7 @@
 .local/
 dist/
 **/.gradle/
+**/.kotlin/
 **/build/
 **/bin/
 **/obj/

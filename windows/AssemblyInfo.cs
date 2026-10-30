@@ -1,8 +1,8 @@
 using System.Reflection;
-[assembly: AssemblyTitle("Share-Me-Rowell")]
-[assembly: AssemblyProduct("Share-Me-Rowell")]
+[assembly: AssemblyTitle("Share Mode")]
+[assembly: AssemblyProduct("Share Mode")]
 [assembly: AssemblyDescription("Local file sharing for Android and Windows")]
 [assembly: AssemblyCompany("Rowell")]
 [assembly: AssemblyCopyright("Copyright 2026 Rowell")]
-[assembly: AssemblyVersion("1.0.2.0")]
-[assembly: AssemblyFileVersion("1.0.2.0")]
+[assembly: AssemblyVersion("1.0.3.0")]
+[assembly: AssemblyFileVersion("1.0.3.0")]

@@ -29,10 +29,10 @@ class InstallerServer(private val apk:File):Closeable {
         val output=it.getOutputStream()
         if(!request.startsWith("GET ") || path!in setOf("/$token","/$token/app.apk")){output.write("HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".toByteArray());return}
         if(path!!.endsWith("/app.apk")){
-            output.write(("HTTP/1.1 200 OK\r\nContent-Type: application/vnd.android.package-archive\r\nContent-Disposition: attachment; filename=Share-Me-Rowell.apk\r\nContent-Length: ${apk.length()}\r\nX-Content-Type-Options: nosniff\r\nConnection: close\r\n\r\n").toByteArray())
+            output.write(("HTTP/1.1 200 OK\r\nContent-Type: application/vnd.android.package-archive\r\nContent-Disposition: attachment; filename=Share-Mode.apk\r\nContent-Length: ${apk.length()}\r\nX-Content-Type-Options: nosniff\r\nConnection: close\r\n\r\n").toByteArray())
             apk.inputStream().use{source->Wire.copy(source,output,apk.length())}
         }else{
-            val html="""<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>Share-Me-Rowell</title><body style="background:#0c131e;color:white;font:18px system-ui;padding:28px"><h1>Share-Me-Rowell</h1><p>Get the Android app to share files over local Wi-Fi or a hotspot.</p><p><a style="display:inline-block;background:#70e2c2;color:#0c131e;padding:18px;border-radius:12px" href="/$token/app.apk">Download Android APK</a></p><p>Tap the downloaded APK and follow Android's installation prompt. No account is needed.</p></body>""".toByteArray()
+            val html="""<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>Share Mode</title><body style="background:#0c131e;color:white;font:18px system-ui;padding:28px"><h1>Share Mode</h1><p>Get the Android app to share files over local Wi-Fi or a hotspot.</p><p><a style="display:inline-block;background:#70e2c2;color:#0c131e;padding:18px;border-radius:12px" href="/$token/app.apk">Download Android APK</a></p><p>Tap the downloaded APK and follow Android's installation prompt. No account is needed.</p></body>""".toByteArray()
             output.write("HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: ${html.size}\r\nCache-Control: no-store\r\nContent-Security-Policy: default-src 'none'; style-src 'unsafe-inline'\r\nConnection: close\r\n\r\n".toByteArray());output.write(html)
         }
     }}}

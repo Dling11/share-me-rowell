@@ -7,6 +7,7 @@ import android.os.Environment
 import android.os.ParcelFileDescriptor
 import android.provider.MediaStore
 import android.provider.OpenableColumns
+import android.webkit.MimeTypeMap
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.*
@@ -19,6 +20,7 @@ data class Prepared(val meta: FileMeta, val uri: Uri) {
     }
 }
 data class History(val direction: String, val name: String, val size: Long, val uri: String, val time: Long)
+fun mimeType(name:String):String = MimeTypeMap.getSingleton().getMimeTypeFromExtension(name.substringAfterLast('.',"").lowercase()) ?: "application/octet-stream"
 
 class ReceiveStore(private val context: Context) {
     private val prefs = context.getSharedPreferences("transfers", Context.MODE_PRIVATE)
@@ -36,7 +38,7 @@ class ReceiveStore(private val context: Context) {
         }
         val values=ContentValues().apply {
             put(MediaStore.Downloads.DISPLAY_NAME,file.name)
-            put(MediaStore.Downloads.MIME_TYPE, if(file.name.endsWith(".apk",true)) "application/vnd.android.package-archive" else "application/octet-stream")
+            put(MediaStore.Downloads.MIME_TYPE, mimeType(file.name))
             put(MediaStore.Downloads.RELATIVE_PATH,Environment.DIRECTORY_DOWNLOADS+"/SHARE-ME-ROWELL")
             put(MediaStore.Downloads.IS_PENDING,1)
         }

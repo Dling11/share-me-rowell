@@ -15,7 +15,7 @@ const pause=ms=>new Promise(r=>setTimeout(r,ms));
 async function card(info,phase){let last;for(let attempt=0;attempt<150;attempt++){try{last=JSON.parse(await fs.readFile(path.join(info.folder,'connection.json'),'utf8'));if(last.phase===phase)return last;}catch{}await pause(20);}throw new Error(`Expected connection card ${phase}, received ${JSON.stringify(last)}`);}
 async function server(mode='receive',files=[]){
   const folder=path.join(work,`server-${servers.length}`);await fs.mkdir(folder);await fs.writeFile(path.join(folder,'test-installer.apk'),Buffer.from('Dummy APK bootstrap fixture'));
-  const process=spawn(path.join(root,'dist','Windows','Share-Me-Rowell.exe'),['--test-server',folder,...(mode==='send'?['send',...files]:[])],{windowsHide:true,stdio:'ignore'});
+  const process=spawn(path.join(root,'dist','Windows','Share-Mode.exe'),['--test-server',folder,...(mode==='send'?['send',...files]:[])],{windowsHide:true,stdio:'ignore'});
   servers.push({process,folder});
   for(let i=0;i<150;i++){
     try{const info=JSON.parse(await fs.readFile(path.join(folder,'server.json'),'utf8'));return {...info,folder};}catch{}
