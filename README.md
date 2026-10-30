@@ -4,33 +4,33 @@ Local file sharing for **Android and Windows**, by Rowell. Send photos, videos, 
 
 Previously named Share-Me-Rowell. The source folder, repository URL, pairing format, Android package/signing identity and existing download/history locations are retained for compatibility.
 
-Android 10+ · Windows 10/11, 64-bit · **1.0.3 preview release**
+Android 10+ · Windows 10/11, 64-bit · **1.0.4 preview release**
 
 ## Downloads
 
-Download Share Mode 1.0.3:
+Download Share Mode 1.0.4:
 
-- [Android APK](https://github.com/Dling11/share-me-rowell/releases/download/v1.0.3/Share-Mode-1.0.3.apk)
-- [Android ZIP with instructions](https://github.com/Dling11/share-me-rowell/releases/download/v1.0.3/Share-Mode-Android-1.0.3.zip)
-- [Windows portable ZIP](https://github.com/Dling11/share-me-rowell/releases/download/v1.0.3/Share-Mode-Windows-1.0.3.zip)
-- [Complete package](https://github.com/Dling11/share-me-rowell/releases/download/v1.0.3/Share-Mode-Complete-1.0.3.zip)
-- [Checksums](https://github.com/Dling11/share-me-rowell/releases/download/v1.0.3/SHA256SUMS.txt) and [validation metadata](https://github.com/Dling11/share-me-rowell/releases/download/v1.0.3/VERSION.json)
+- [Android APK](https://github.com/Dling11/share-me-rowell/releases/download/v1.0.4/Share-Mode-1.0.4.apk)
+- [Android ZIP with instructions](https://github.com/Dling11/share-me-rowell/releases/download/v1.0.4/Share-Mode-Android-1.0.4.zip)
+- [Windows portable ZIP](https://github.com/Dling11/share-me-rowell/releases/download/v1.0.4/Share-Mode-Windows-1.0.4.zip)
+- [Complete package](https://github.com/Dling11/share-me-rowell/releases/download/v1.0.4/Share-Mode-Complete-1.0.4.zip)
+- [Checksums](https://github.com/Dling11/share-me-rowell/releases/download/v1.0.4/SHA256SUMS.txt) and [validation metadata](https://github.com/Dling11/share-me-rowell/releases/download/v1.0.4/VERSION.json)
 
-The [previous public 1.0.2 release](https://github.com/Dling11/share-me-rowell/releases/tag/v1.0.2) still uses the old name and does not contain the 1.0.3 changes. GitHub's Source code ZIP is for development, not installation.
+Version 1.0.4 fixes an Android receiver TLS-key authorization failure reproduced on a real phone in 1.0.3. Earlier releases remain available under [all releases](https://github.com/Dling11/share-me-rowell/releases). GitHub's Source code ZIP is for development, not installation.
 
 Each download ZIP has one outer folder. The Windows ZIP includes the same Android APK for its local download QR. Keep `QRCoder.dll` beside `Share-Mode.exe`.
 
 ## Screenshots
 
-The Android Send screen, captured from the installed 1.0.3 app:
+The Android Send layout, unchanged by the TLS hotfix:
 
-<img src="assets/android-send.png" alt="Share Mode 1.0.3 on Android, with Choose files and Send, Receive and Recent tabs" width="320">
+<img src="assets/android-send.png" alt="Share Mode on Android, with Choose files and Send, Receive and Recent tabs" width="320">
 
 The Windows app and selected-file review:
 
-![Share Mode 1.0.3 on Windows](assets/windows-dark.png)
+![Share Mode 1.0.4 on Windows](assets/windows-dark.png)
 
-![Selected files in Share Mode 1.0.3](assets/windows-selection.png)
+![Selected files in Share Mode 1.0.4](assets/windows-selection.png)
 
 Windows screenshots use example files and an isolated loopback pairing session. Their QR codes do not connect to a real sharing device.
 

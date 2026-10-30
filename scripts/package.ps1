@@ -1,10 +1,14 @@
 $ErrorActionPreference='Stop'
 $projectRoot=(Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
 $dist=Join-Path $projectRoot 'dist'
-$version='1.0.3'
+$version='1.0.4'
 $packagingRevision='standard'
 $releaseTag="v$version"
 $apk=Join-Path $dist "Share-Mode-$version.apk"
+if($version -eq '1.0.4'){
+    $tlsProof=Get-Content -LiteralPath (Join-Path $projectRoot '.local\phone-verification\secure-listener-check.json') -Raw | ConvertFrom-Json
+    if(!$tlsProof.passed -or !$tlsProof.fingerprintMatched -or !$tlsProof.invalidPairingRejected -or $tlsProof.phoneVersion -ne $version -or $tlsProof.apkSha256 -ne (Get-FileHash -LiteralPath $apk -Algorithm SHA256).Hash.ToLowerInvariant()){throw 'Real-phone TLS regression check must pass for this exact APK before packaging 1.0.4'}
+}
 $windows=Join-Path $dist 'Windows'
 foreach($required in @($apk,(Join-Path $windows 'Share-Mode.exe'),(Join-Path $windows 'QRCoder.dll'))){if(!(Test-Path -LiteralPath $required)){throw "Build first: missing $required"}}
 $testReport=Get-Content -LiteralPath (Join-Path $projectRoot '.local\windows-integration.json') -Raw | ConvertFrom-Json
@@ -24,7 +28,7 @@ foreach($result in Get-ChildItem -LiteralPath (Join-Path $projectRoot 'android\a
 }
 [xml]$lint=Get-Content -LiteralPath (Join-Path $projectRoot 'android\app\build\reports\lint-results-release.xml') -Raw
 $lintErrors=@($lint.issues.issue | Where-Object {$_.severity -in @('Error','Fatal')}).Count
-if($lintErrors -ne 0 -or $jvmPassed -lt 28 -or $testReport.passed -lt 18 -or $windowsChecks.passed -lt 5 -or $uiChecks.passed -lt 7 -or !$qrReport.passed){throw 'Required local checks are incomplete'}
+if($lintErrors -ne 0 -or $jvmPassed -lt 31 -or $testReport.passed -lt 18 -or $windowsChecks.passed -lt 5 -or $uiChecks.passed -lt 7 -or !$qrReport.passed){throw 'Required local checks are incomplete'}
 New-Item -ItemType Directory -Force -Path (Join-Path $windows 'Android') | Out-Null
 Copy-Item -LiteralPath $apk -Destination (Join-Path $windows 'Android\Share-Mode.apk')
 Copy-Item -LiteralPath (Join-Path $projectRoot 'scripts\Allow-Local-Network.ps1') -Destination $windows
@@ -34,7 +38,7 @@ Copy-Item -Path (Join-Path $projectRoot 'licenses\*.txt') -Destination (Join-Pat
 $androidGuide=@'
 SHARE MODE - Android
 
-1. Extract this ZIP, open Share-Mode-Android, then tap Share-Mode-1.0.3.apk on Android 10 or newer.
+1. Extract this ZIP, open Share-Mode-Android, then tap Share-Mode-1.0.4.apk on Android 10 or newer.
 2. Allow your browser/file manager to install this APK if Android asks.
 3. Connect both devices to the same Wi-Fi or a phone hotspot.
 4. Sender: Send > Choose files. Select one or several; review names/sizes.
@@ -118,9 +122,9 @@ try{
     if(Test-Path -LiteralPath $phoneProofPath){
         $phoneProof=Get-Content -LiteralPath $phoneProofPath -Raw | ConvertFrom-Json
         $phoneVerified=$phoneProof.version -eq $version -and $phoneProof.apkSha256 -eq $apkHash -and $phoneProof.updateInstalled -and $phoneProof.nativeLaunchVerified -and $phoneProof.sendScreenVerified
-        if($phoneVerified){$phoneTests='Android 15 in-place update, native launch and Send screen verified; two-phone Wi-Fi/hotspot transfer testing pending'}
+        if($phoneVerified){$phoneTests='Android 15 update, native launch, Send screen and secure listener verified; full two-phone Wi-Fi/hotspot file transfers pending'}
     }
-    $metadata=[ordered]@{name='Share Mode';version=$version;packagingRevision=$packagingRevision;releaseTag=$releaseTag;published=$false;archiveFolders=@{windows='Share-Mode/';android='Share-Mode-Android/';complete='Share-Mode/'};builtUtc=[DateTime]::UtcNow.ToString('o');android=@{package='com.rowell.shareme';minimumAndroid=10;targetSdk=35;signerCertificateSha256=$certificate};validation=@{androidJvmTestsPassed=$jvmPassed;androidLintErrors=$lintErrors;windowsIntegrationChecksPassed=$testReport.passed;windowsUnitChecksPassed=$windowsChecks.passed;windowsUiChecksPassed=$uiChecks.passed;renderedQrDecoded=$qrReport.passed;installedOnPhone=$phoneVerified;nativePhoneLaunchVerified=$phoneVerified;phoneTests=$phoneTests;multiGigabytePhysicalTransfer='Not benchmarked; 64-bit metadata and streaming tested locally'};artifacts=$artifacts}
+    $metadata=[ordered]@{name='Share Mode';version=$version;packagingRevision=$packagingRevision;releaseTag=$releaseTag;published=$false;archiveFolders=@{windows='Share-Mode/';android='Share-Mode-Android/';complete='Share-Mode/'};builtUtc=[DateTime]::UtcNow.ToString('o');android=@{package='com.rowell.shareme';minimumAndroid=10;targetSdk=35;signerCertificateSha256=$certificate};validation=@{androidJvmTestsPassed=$jvmPassed;androidLintErrors=$lintErrors;windowsIntegrationChecksPassed=$testReport.passed;windowsUnitChecksPassed=$windowsChecks.passed;windowsUiChecksPassed=$uiChecks.passed;renderedQrDecoded=$qrReport.passed;installedOnPhone=$phoneVerified;nativePhoneLaunchVerified=$phoneVerified;physicalPhoneTlsListenerVerified=[bool]$tlsProof.passed;phoneTests=$phoneTests;multiGigabytePhysicalTransfer='Not benchmarked; 64-bit metadata and streaming tested locally'};artifacts=$artifacts}
     $metadata | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $dist 'VERSION.json') -Encoding UTF8
     $artifacts | ForEach-Object {$_.sha256+'  '+$_.file} | Set-Content -LiteralPath (Join-Path $dist 'SHA256SUMS.txt') -Encoding ASCII
     & (Join-Path $PSScriptRoot 'verify-packages.ps1')

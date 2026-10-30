@@ -6,6 +6,8 @@ The QR is `shareme-rowell://pair/<base64url-json>`. JSON fields: `v=1`, `hosts` 
 
 Share Mode 1.0.3 retains this scheme/version for compatibility. Android advertises LAN interfaces instead of cellular/VPN addresses. App-created hotspot codes include only the hotspot endpoints. The joining client requests the named SSID even when another Wi-Fi uses the same subnet, waits for IPv4 link properties and uses that Network's socket factory. TCP connection and TLS negotiation have separate bounded timeouts before approval/transfer waits. Idle listener codes refresh when local addresses change.
 
+Version 1.0.4 uses the `shareme-tls-v2` AndroidKeyStore alias, authorizing the raw RSA signing operation used internally by Conscrypt. A server-only key-manager wrapper selects only this alias for both socket and engine handshakes, so the old incompatible alias cannot be chosen after an upgrade. TLS remains restricted to 1.2/ECDHE-RSA and the QR still pins the exact certificate. The application installation certificate and wire protocol are unchanged.
+
 Control frames are UTF-8 JSON followed by LF, at most 65,536 bytes. No text reader may buffer past LF into a binary payload. File metadata: `id`, sanitized `name`, `size` (64-bit integer, 0 through 1 TB), `sha256`. A batch has 1–16 files with unique IDs. Paths, file URIs and local source filenames beyond the display name never travel in an offer.
 
 Push: client sends `{v:1, op:"push", code, name, files:[...]}`. Receive host checks/approves, then responds `{ok:true, offsets:[...]}`. Pull: client sends `{v:1, op:"pull", code, name}` to a send host. After host approval, it responds `{ok:true, sender, files:[...]}`; the client receiver approves and responds with offsets.

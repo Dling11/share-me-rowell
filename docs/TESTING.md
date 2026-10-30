@@ -1,4 +1,4 @@
-# Share Mode 1.0.3 validation
+# Share Mode 1.0.4 validation
 
 ## Scope
 
@@ -19,7 +19,11 @@ These checks do not establish physical phone-to-phone compatibility or measured 
 
 ## Physical testing to complete
 
-Version 1.0.3 was installed as an in-place update from 1.0.1 on an Android 15 phone. The unchanged original install date, version code 4, successful native launch and actual Send-screen capture were verified. The signing certificate matches the previous release. This establishes installation and visible UI on that device; two-phone Wi-Fi/hotspot transfers remain pending.
+Version 1.0.3 was installed as an in-place update from 1.0.1 on an Android 15 phone. Native launch and the visible Send screen passed, but a subsequent PC-to-phone secure-listener check reproduced an AndroidKeyStore `INCOMPATIBLE_DIGEST` failure before pairing. This is a confirmed Android hosting defect, independent of Wi-Fi discovery or incoming file approval.
+
+Version 1.0.4 generates a separate, versioned TLS identity with the digest/padding authorizations required by Conscrypt, and explicitly selects that identity even while the old entry remains in AndroidKeyStore. The app installation signer and package are unchanged. The existing download/history paths remain. Fresh pairing codes carry the new TLS certificate fingerprint.
+
+The regression tests cover socket and engine alias selection with an old identity present, rejection of stale/unrelated aliases and absence of client authentication. Real-phone verification passed on the updated Android 15 device using both default TLS signature negotiation and RSA PKCS1/SHA256. Each check verified the exact installed APK bytes, migration to the new certificate, a TLS 1.2/ECDHE-RSA connection, the QR fingerprint, and rejection of an invalid pairing code. No files were sent or created. Two-phone Wi-Fi/hotspot file-transfer testing remains separate.
 
 The owner reports earlier phone-to-PC transfers and offline installer sharing work. The earlier phone-to-phone test failed on both Wi-Fi and hotspot; its exact failure stage has not yet been established.
 
@@ -47,5 +51,7 @@ The previous manifest omitted `CHANGE_NETWORK_STATE`, which is required by `Conn
 Hotspot QR addresses exclude the concurrent router. Cellular/VPN/virtual interfaces are not advertised as local phone endpoints. A matching subnet does not establish hotspot identity. Hotspot joining waits for an IPv4 address from `onLinkPropertiesChanged` and binds its client socket to that Network. Host startup waits for its hotspot interface instead of a fixed delay. Reachable QR alternatives are tried first; TLS negotiation has a separate timeout. Android's signing-only keystore identity is served using ECDHE-RSA cipher suites.
 
 Android documents the callback ordering race in [Read network state](https://developer.android.com/develop/connectivity/network-ops/reading-network-state). Permission requirements: [Use a local-only Wi-Fi hotspot](https://developer.android.com/develop/connectivity/wifi/localonlyhotspot).
+
+TLS key authorizations: [KeyGenParameterSpec.Builder](https://developer.android.com/reference/android/security/keystore/KeyGenParameterSpec.Builder). Conscrypt signs a digest/padded TLS message prepared by its TLS implementation; allowing that raw private-key operation does not remove TLS encryption or the QR certificate pin check.
 
 Network-request permission: [ConnectivityManager.requestNetwork](https://developer.android.com/reference/android/net/ConnectivityManager#requestNetwork(android.net.NetworkRequest,%20android.net.ConnectivityManager.NetworkCallback,%20android.os.Handler,%20int)).

@@ -19,6 +19,7 @@ import javax.net.ssl.*
 import javax.security.auth.x500.X500Principal
 
 class Transport(private val context:Context) : Closeable {
+    private val tlsAlias="shareme-tls-v2"
     private val executor=Executors.newFixedThreadPool(3)
     private val connections=Collections.synchronizedSet(mutableSetOf<Socket>())
     private val store=ReceiveStore(context)
@@ -36,10 +37,13 @@ class Transport(private val context:Context) : Closeable {
     private val identity:KeyStore by lazy {
         KeyStore.getInstance("AndroidKeyStore").apply {
             load(null)
-            if(!containsAlias("shareme-tls"))KeyPairGenerator.getInstance(KeyProperties.KEY_ALGORITHM_RSA,"AndroidKeyStore").apply {
-                initialize(KeyGenParameterSpec.Builder("shareme-tls",KeyProperties.PURPOSE_SIGN or KeyProperties.PURPOSE_VERIFY)
-                    .setKeySize(2048).setDigests(KeyProperties.DIGEST_SHA256,KeyProperties.DIGEST_SHA512)
-                    .setSignaturePaddings(KeyProperties.SIGNATURE_PADDING_RSA_PKCS1)
+            // Conscrypt hashes/pads TLS signatures itself, then asks AndroidKeyStore for
+            // the raw RSA operation. The old alias lacks these immutable authorizations.
+            if(!containsAlias(tlsAlias))KeyPairGenerator.getInstance(KeyProperties.KEY_ALGORITHM_RSA,"AndroidKeyStore").apply {
+                initialize(KeyGenParameterSpec.Builder(tlsAlias,KeyProperties.PURPOSE_SIGN or KeyProperties.PURPOSE_VERIFY)
+                    .setKeySize(2048).setDigests(KeyProperties.DIGEST_NONE,KeyProperties.DIGEST_SHA256,KeyProperties.DIGEST_SHA384,KeyProperties.DIGEST_SHA512)
+                    .setSignaturePaddings(KeyProperties.SIGNATURE_PADDING_RSA_PKCS1,KeyProperties.SIGNATURE_PADDING_RSA_PSS)
+                    .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
                     .setCertificateSubject(X500Principal("CN=Share Mode"))
                     .setCertificateSerialNumber(BigInteger(64,SecureRandom()).add(BigInteger.ONE))
                     .setCertificateNotBefore(Date(System.currentTimeMillis()-86400000))
@@ -54,13 +58,15 @@ class Transport(private val context:Context) : Closeable {
         require(hosts.isNotEmpty()) {"Connect to Wi-Fi or create a hotspot first."}
         sources=files
         val managers=KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm()).apply{init(identity,null)}
-        val ssl=SSLContext.getInstance("TLS").apply{init(managers.keyManagers,null,SecureRandom())}
+        // Pin selection to the migrated identity; the old alias can remain in the store.
+        val selected=managers.keyManagers.map{if(it is X509KeyManager)ServerAliasKeyManager(it,tlsAlias)else it}.toTypedArray()
+        val ssl=SSLContext.getInstance("TLS").apply{init(selected,null,SecureRandom())}
         val server=ssl.serverSocketFactory.createServerSocket(0) as SSLServerSocket
         server.enabledProtocols=arrayOf("TLSv1.2")
         // The AndroidKeyStore identity can sign, but cannot perform static RSA key exchange.
         server.enabledCipherSuites=server.enabledCipherSuites.filter{it.startsWith("TLS_ECDHE_RSA_")}.toTypedArray()
         synchronized(guard){if(stopped){server.close();return};listener=server}
-        val fp=hex(MessageDigest.getInstance("SHA-256").digest(identity.getCertificate("shareme-tls").encoded))
+        val fp=hex(MessageDigest.getInstance("SHA-256").digest(identity.getCertificate(tlsAlias).encoded))
         val secret=ByteArray(32).also{SecureRandom().nextBytes(it)}
         val pair=Pairing(hosts,server.localPort,fp,Base64.getUrlEncoder().withoutPadding().encodeToString(secret),mode,Model.deviceName,Model.value.ssid,Model.value.password)
         session=pair;expires=System.currentTimeMillis()+10*60*1000

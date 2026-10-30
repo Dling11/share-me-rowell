@@ -21,5 +21,5 @@ try{
     if($LASTEXITCODE -ne 0){throw 'Android build failed.'}
     $dist=Join-Path $projectRoot 'dist'
     New-Item -ItemType Directory -Force -Path $dist | Out-Null
-    Copy-Item -LiteralPath (Join-Path $projectRoot 'android\app\build\outputs\apk\release\app-release.apk') -Destination (Join-Path $dist 'Share-Mode-1.0.3.apk')
+    Copy-Item -LiteralPath (Join-Path $projectRoot 'android\app\build\outputs\apk\release\app-release.apk') -Destination (Join-Path $dist 'Share-Mode-1.0.4.apk')
 }finally{$env:JAVA_HOME=$previousJava;$env:ANDROID_HOME=$previousSdk;$env:GRADLE_USER_HOME=$previousCache;$env:JAVA_TOOL_OPTIONS=$previousJavaOptions}

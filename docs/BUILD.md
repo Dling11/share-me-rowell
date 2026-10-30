@@ -21,9 +21,9 @@ On a new machine, obtain a Windows JDK from [Eclipse Adoptium](https://adoptium.
 
 For another local toolchain, pass `-JavaDirectory`, `-SdkDirectory` and `-GradleDirectory` to the build; verification accepts the first two. Dependencies and project state stay in `.local/gradle-local` and `.local/android-project-cache`. The ignored `android/local.properties` points to the chosen SDK.
 
-The build runs JVM tests, assembles the optimized signed APK and runs release lint. Output: `dist/Share-Mode-1.0.3.apk`. Java's temporary socket directory is scoped to `.local/nio-temp` because this machine's normal temp directory rejects Java domain-socket connections. Process environment settings are restored afterward; Windows, network and Docker settings are unchanged.
+The build runs JVM tests, assembles the optimized signed APK and runs release lint. Output: `dist/Share-Mode-1.0.4.apk`. Java's temporary socket directory is scoped to `.local/nio-temp` because this machine's normal temp directory rejects Java domain-socket connections. Process environment settings are restored afterward; Windows, network and Docker settings are unchanged.
 
-The existing private `.local/signing/shareme.jks` and password file are required. The build does not replace or regenerate them. Verification checks package `com.rowell.shareme`, version code 4, version name 1.0.3, label Share Mode, Android 10 minimum and SDK 35 target, then compares the signer with the previous release's certificate in `.local/signing/certificate-sha256.txt`. This text is a public certificate fingerprint; the keystore and password remain private. Restore the original private backup if signing files are missing.
+The existing private `.local/signing/shareme.jks` and password file are required. The build does not replace or regenerate them. Verification checks package `com.rowell.shareme`, version code 4, version name 1.0.4, label Share Mode, Android 10 minimum and SDK 35 target, then compares the signer with the previous release's certificate in `.local/signing/certificate-sha256.txt`. This text is a public certificate fingerprint; the keystore and password remain private. Restore the original private backup if signing files are missing.
 
 ## Windows
 
@@ -46,4 +46,12 @@ The integration harness uses loopback servers and isolated dummy files. It check
 
 Packaging requires successful test, lint, signature and QR reports. It creates separate Android, Windows and complete ZIPs with one outer folder each, plus `SHA256SUMS.txt` and `VERSION.json`. `verify-packages.ps1` checks archive checksums, outer folders, matching APK bytes, and exclusion of old installers and private/development files. Windows includes the same Android APK as the standalone download. Signing keys and caches are excluded.
 
-The repository is still [Dling11/share-me-rowell](https://github.com/Dling11/share-me-rowell). Build and packaging commands do not commit, push or publish. The owner-authorized 1.0.3 release uses the Share-Mode filenames linked in README; earlier releases retain their old names.
+The 1.0.4 TLS hotfix also requires a successful real-phone listener report for the exact installed APK. With the updated app's Receive screen open, privately capture its QR under `.local/` and run:
+
+```text
+node tests/android-listener-check.mjs --serial <adb-device> --qr-image <private-screenshot> --apk dist/Share-Mode-1.0.4.apk --version 1.0.4 --version-code 5
+```
+
+Repeat with `--legacy-signature` to check RSA PKCS1/SHA256 compatibility. The check verifies installed APK bytes, the QR certificate fingerprint and rejection of an invalid pairing code. It sends no files and creates no transfer-history entry. QR contents remain in process memory; only the result is saved in ignored `.local/phone-verification/`. Do not publish the QR screenshot.
+
+The repository is still [Dling11/share-me-rowell](https://github.com/Dling11/share-me-rowell). Build and packaging commands do not commit, push or publish. The owner-authorized 1.0.4 release uses the Share-Mode filenames linked in README; earlier releases retain their old names.

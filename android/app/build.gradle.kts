@@ -3,7 +3,7 @@ android {
     namespace = "com.rowell.shareme"
     compileSdk = 35
     buildToolsVersion = "35.0.0"
-    defaultConfig { applicationId = "com.rowell.shareme"; minSdk = 29; targetSdk = 35; versionCode = 4; versionName = "1.0.3" }
+    defaultConfig { applicationId = "com.rowell.shareme"; minSdk = 29; targetSdk = 35; versionCode = 5; versionName = "1.0.4" }
     signingConfigs {
         create("rowell") {
             storeFile = rootDir.resolve("../.local/signing/shareme.jks")
