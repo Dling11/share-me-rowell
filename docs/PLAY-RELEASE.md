@@ -4,7 +4,7 @@ This is a local development candidate. The public Android/Windows release remain
 
 ## Included
 
-- Local name and customizable chibi avatar, drawn in code without downloaded images or an avatar dependency.
+- Local name and customizable chibi avatar, drawn in code without downloaded images or an avatar dependency. Boy/Girl appearance presets keep all hair/colour/expression choices available; Surprise me retains the selected style. Existing saved avatars and older nearby peers remain compatible.
 - Android nearby receivers over platform DNS-SD on the same Wi-Fi/hotspot. Only an open, visible Receive screen advertises. A connection-specific 64-bit comparison code binds the actual TLS certificate and a fresh client nonce. The sender checks this code before selected-file metadata is sent; the receiver checks it and approves before payload transfer. Public discovery metadata contains no QR secret or Wi-Fi password.
 - QR pairing and the existing Windows protocol remain compatible. Windows 1.0.4 uses QR; it does not advertise in the Android receiver list.
 - Searchable launcher-app selection; standalone APK export and split APK bundles. Explicit received-bundle installation through Android's PackageInstaller. Sharing Share Mode itself also includes all installed parts; a split/Play installation offers its store link and does not advertise an incomplete base APK through local download QR. Standalone installations retain the offline APK bootstrap.

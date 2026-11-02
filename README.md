@@ -6,7 +6,7 @@ Previously named Share-Me-Rowell. The source folder, repository URL, pairing for
 
 Android 10+ · Windows 10/11, 64-bit · **1.0.4 preview release**
 
-The Android **1.1.0 development candidate** adds local chibi avatars, nearby receiver selection, installed-app sharing and background-idle cleanup. It targets Android 16 and builds both APK and AAB. It passes 50 local tests and native checks on two Android 16 virtual phones; physical two-phone testing remains pending. Public downloads below remain 1.0.4. See [release preparation](docs/PLAY-RELEASE.md), [build instructions](docs/BUILD.md) and the [privacy policy](docs/PRIVACY.md).
+The Android **1.1.0 development candidate** adds local chibi avatars with Boy/Girl looks, nearby receiver selection, installed-app sharing and background-idle cleanup. It targets Android 16 and builds both APK and AAB. The current candidate passes 51 local tests, including avatar save/reload and older-peer compatibility. The sharing flows passed native checks on two Android 16 virtual phones before the Boy/Girl addition; physical two-phone testing remains pending. Public downloads below remain 1.0.4. See [release preparation](docs/PLAY-RELEASE.md), [build instructions](docs/BUILD.md) and the [privacy policy](docs/PRIVACY.md).
 
 ## Downloads
 
@@ -38,7 +38,7 @@ The published Windows 1.0.4 app and selected-file review:
 
 Windows screenshots use example files and an isolated loopback pairing session. Their QR codes do not connect to a real sharing device.
 
-In the Android 1.1.0 candidate, tap the avatar to edit your nearby name and look. Choose files or an installed app, then tap **Choose receiver** to find an open Receive screen on the same Wi-Fi or hotspot. Compare the transfer code on both phones and approve the transfer. **Scan QR · phone or PC** remains available. The usage instructions below describe the published 1.0.4 downloads.
+In the Android 1.1.0 candidate, tap the avatar to edit your nearby name and look. Choose **Boy** or **Girl**, then customize any hair, colours and expression. **Surprise me** keeps your chosen style. Choose files or an installed app, then tap **Choose receiver** to find an open Receive screen on the same Wi-Fi or hotspot. Compare the transfer code on both phones and approve the transfer. **Scan QR · phone or PC** remains available. The usage instructions below describe the published 1.0.4 downloads.
 
 ## Phone → phone
 

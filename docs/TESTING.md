@@ -8,7 +8,7 @@ This preview release renames the app, simplifies mobile sending/receiving, adds 
 
 Build/package scripts record current results in `.local/` and `dist/VERSION.json`:
 
-- Android JVM protocol, peer-state, connection-error and local-routing regression tests.
+- Android JVM protocol, peer-state, connection-error and local-routing regression tests. Avatar coverage includes legacy saved profiles, Boy/Girl style bounds, optional nearby metadata, older-peer fallback, and saving/reloading the selected look after randomization.
 - Release lint and optimized APK assembly.
 - APK signature, package/version/label and previous-release signer comparison.
 - 18 Windows loopback transfer/installer checks.
@@ -58,7 +58,7 @@ Network-request permission: [ConnectivityManager.requestNetwork](https://develop
 
 ## Android 1.1.0 emulator lab
 
-Two independent Android 16/API 36 AOSP virtual phones were installed with the signed release APK and connected through Android Emulator's shared virtual Wi-Fi and SoftAP networking. The isolated tools, virtual disks, disposable split-app fixture, UI automation and private results are under `.local/android-lab/`; no existing Docker environment is used. Stop the virtual devices when the run ends.
+Two independent Android 16/API 36 AOSP virtual phones were installed with the initial signed 1.1.0 candidate APK and connected through Android Emulator's shared virtual Wi-Fi and SoftAP networking. This run preceded the Boy/Girl appearance extension, which has separate JVM and Compose UI checks. The isolated tools, virtual disks, disposable split-app fixture, UI automation and private results are under `.local/android-lab/`; no existing Docker environment is used. Stop the virtual devices when the run ends.
 
 The lab exercises actual Android framework services, application UIDs, AndroidKeyStore/TLS, NSD, Wi-Fi joining prompts, MediaStore downloads and PackageInstaller. Coverage includes receiver-name/avatar discovery, connection-code confirmation, withholding file details before sender approval, router Wi-Fi and app-created hotspot payloads, multi-file/empty-file/Unicode-content hashes, normal APK updates with retained history/identity, split-app export/installation, a 128 MiB transfer with the receiver on Home, background-idle shutdown and the native notification Stop action. Receiver discovery must also restart when Choose receiver is tapped after stopping, while keeping the selection.
 

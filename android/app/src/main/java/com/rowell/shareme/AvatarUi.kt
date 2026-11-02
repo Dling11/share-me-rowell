@@ -34,6 +34,10 @@ private val shirtTones=listOf(0xFF70E2C2,0xFFAFA5FF,0xFFFFA7B8,0xFFFFD875,0xFF85
             if(style.hair==3)drawRoundRect(hair,Offset(22f,20f),Size(56f,65f),androidx.compose.ui.geometry.CornerRadius(24f))
             if(style.hair==4){drawCircle(hair,13f,Offset(24f,30f));drawCircle(hair,13f,Offset(76f,30f))}
             drawOval(shirt,Offset(29f,70f),Size(42f,26f))
+            if(style.look==1){
+                val collar=Path().apply{moveTo(42f,71f);lineTo(50f,78f);lineTo(58f,71f);lineTo(50f,74f);close()}
+                drawPath(collar,Color.White.copy(alpha=.85f))
+            }
             drawLine(shirt,Offset(32f,77f),Offset(22f,83f),9f,StrokeCap.Round)
             drawLine(shirt,Offset(68f,77f),Offset(78f,67f),9f,StrokeCap.Round)
             drawCircle(skin,5f,Offset(80f,64f))
@@ -46,6 +50,11 @@ private val shirtTones=listOf(0xFF70E2C2,0xFFAFA5FF,0xFFFFA7B8,0xFFFFD875,0xFF85
                 if(style.hair==1)drawLine(hair,Offset(47f,20f),Offset(57f,9f),7f,StrokeCap.Round)
                 if(style.hair==2){drawCircle(hair,8f,Offset(33f,22f));drawCircle(hair,8f,Offset(47f,19f));drawCircle(hair,8f,Offset(62f,22f))}
             }
+            if(style.look==1){
+                val bow=Path().apply{moveTo(72f,27f);lineTo(63f,20f);lineTo(63f,34f);close();moveTo(73f,27f);lineTo(82f,20f);lineTo(82f,34f);close()}
+                drawPath(bow,shirt)
+                drawCircle(Color.White.copy(alpha=.9f),2.5f,Offset(72.5f,27f))
+            }
             val ink=Color(0xFF302536)
             if(style.eyes==1){
                 drawArc(ink,190f,160f,false,Offset(34f,46f),Size(10f,9f),style=Stroke(2.5f,cap=StrokeCap.Round))
@@ -54,6 +63,10 @@ private val shirtTones=listOf(0xFF70E2C2,0xFFAFA5FF,0xFFFFA7B8,0xFFFFD875,0xFF85
                 drawOval(ink,Offset(36f,46f),Size(5f,8f));drawCircle(Color.White,1.2f,Offset(38f,48f))
                 if(style.eyes==2)drawLine(ink,Offset(58f,50f),Offset(64f,50f),2.5f,StrokeCap.Round)
                 else {drawOval(ink,Offset(59f,46f),Size(5f,8f));drawCircle(Color.White,1.2f,Offset(61f,48f))}
+            }
+            if(style.look==1){
+                drawLine(ink,Offset(35f,48f),Offset(32.5f,45f),1.6f,StrokeCap.Round)
+                drawLine(ink,Offset(65f,48f),Offset(67.5f,45f),1.6f,StrokeCap.Round)
             }
             drawOval(Color(0xFFE98F98).copy(alpha=.6f),Offset(29f,54f),Size(11f,5f))
             drawOval(Color(0xFFE98F98).copy(alpha=.6f),Offset(61f,54f),Size(11f,5f))
@@ -71,7 +84,13 @@ private val shirtTones=listOf(0xFF70E2C2,0xFFAFA5FF,0xFFFFA7B8,0xFFFFD875,0xFF85
             Text("Your nearby look",style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold)
             ChibiAvatar(avatar,Modifier.size(112.dp).align(Alignment.CenterHorizontally))
             OutlinedTextField(name,{name=it.take(24)},label={Text("Your name")},singleLine=true,modifier=Modifier.fillMaxWidth(),supportingText={Text("Seen by people on the same network while Receive is open.")})
-            TextButton(onClick={avatar=AvatarStyle.random()},modifier=Modifier.align(Alignment.CenterHorizontally)){Text("Surprise me")}
+            TextButton(onClick={avatar=AvatarStyle.random(avatar.look)},modifier=Modifier.align(Alignment.CenterHorizontally)){Text("Surprise me")}
+            Text("Avatar style",fontWeight=FontWeight.SemiBold)
+            Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                listOf("Boy","Girl").forEachIndexed{index,label->
+                    FilterChip(selected=avatar.look==index,onClick={if(avatar.look!=index)avatar=avatar.copy(look=index,hair=if(index==1)3 else 0)},label={Text(label)})
+                }
+            }
             Text("Hair",fontWeight=FontWeight.SemiBold)
             FlowRow(horizontalArrangement=Arrangement.spacedBy(6.dp)) {
                 listOf("Soft","Tuft","Fluffy","Long","Buns","None").forEachIndexed{index,label->FilterChip(selected=avatar.hair==index,onClick={avatar=avatar.copy(hair=index)},label={Text(label)})}

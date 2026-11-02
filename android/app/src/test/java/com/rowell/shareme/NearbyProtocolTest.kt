@@ -42,8 +42,19 @@ class NearbyProtocolTest {
     }
     @Test fun avatarParsingBoundsEveryDrawingIndex(){
         assertEquals(profile.avatar,AvatarStyle.parse(profile.avatar.encode()))
-        for(value in listOf("6.0.0.0.0","0.-1.0.0.0","0.0.5.0.0","0.0.0.5.0","0.0.0.0.3","0.0","a.b.c.d.e"))rejected{AvatarStyle.parse(value)}
+        for(value in listOf("6.0.0.0.0","0.-1.0.0.0","0.0.5.0.0","0.0.0.5.0","0.0.0.0.3","0.0.0.0.0.2","0.0.0.0.0.-1","0.0.0.0.0.1.0","0.0","a.b.c.d.e"))rejected{AvatarStyle.parse(value)}
         repeat(100){val style=AvatarStyle.random();assertEquals(style,AvatarStyle.parse(style.encode()))}
+    }
+    @Test fun girlStyleSurvivesDiscoveryWithoutBreakingOlderAvatarReaders(){
+        val girl=profile.copy(avatar=profile.avatar.copy(look=1))
+        val attributes=NearbyProtocol.attributes(girl,pair)
+        assertEquals("1",attributes["look"])
+        assertEquals(5,attributes.getValue("avatar").split('.').size)
+        assertEquals(girl.avatar.copy(look=0),AvatarStyle.parse(attributes.getValue("avatar")))
+        assertEquals(girl.avatar,NearbyProtocol.parse("192.168.1.2",48900,attributes).avatar)
+        assertEquals(profile.avatar,NearbyProtocol.parse("192.168.1.2",48900,NearbyProtocol.attributes(profile,pair)).avatar)
+        for(look in listOf("-1","2","girl",""))rejected{NearbyProtocol.parse("192.168.1.2",48900,attributes+mapOf("look" to look))}
+        repeat(20){assertEquals(1,AvatarStyle.random(1).look);assertEquals(0,AvatarStyle.random(0).look)}
     }
     @Test fun backgroundCleanupDoesNotInterruptTransfersOrVisibleReceiving(){
         assertTrue(SharingLifetime.shouldStop(false,false,false,120000))

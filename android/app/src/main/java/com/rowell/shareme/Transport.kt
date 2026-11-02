@@ -89,7 +89,7 @@ class Transport(private val context:Context) : Closeable {
             synchronized(guard){if(claimed){Wire.write(output,reject("This device is busy."));return};claimed=true;owner=true}
             socket.soTimeout=600000
             val peer=profileName(request.optString("name","Nearby device"))
-            val avatar=if(nearby)runCatching{AvatarStyle.parse(request.optString("avatar"))}.getOrNull() else null
+            val avatar=if(nearby)runCatching{NearbyProtocol.parseAvatar(request.optString("avatar"),if(request.has("look"))request.optString("look") else null)}.getOrNull() else null
             val comparison=if(nearby)NearbyProtocol.transferCode(pair.fingerprint,request.optString("nonce")) else ""
             state{it.copy(connection=PeerConnection.begin(peer,ConnectionPhase.APPROVAL),current="",currentUri="",done=0,total=0)}
             if(nearby){
@@ -149,7 +149,8 @@ class Transport(private val context:Context) : Closeable {
                     if(nearbyPeer!=null){
                         val nonce=hex(ByteArray(16).also{SecureRandom().nextBytes(it)})
                         val comparison=NearbyProtocol.transferCode(pair.fingerprint,nonce)
-                        Wire.write(output,JSONObject().put("v",1).put("op","nearby").put("nonce",nonce).put("name",Model.deviceName).put("avatar",Model.value.profile.avatar.encode()))
+                        val avatar=Model.value.profile.avatar
+                        Wire.write(output,JSONObject().put("v",1).put("op","nearby").put("nonce",nonce).put("name",Model.deviceName).put("avatar",avatar.legacyEncode()).apply{if(avatar.look!=0)put("look",avatar.look)})
                         val ready=Wire.read(input);Wire.success(ready);require(ready.optString("stage")=="nearby"){"This receiver needs a newer version of Share Mode. Use QR instead."}
                         state{it.copy(verificationCode=comparison)}
                         if(!approve(pair.name,files.map{it.meta},true,comparison,nearbyPeer.avatar)){

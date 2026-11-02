@@ -9,14 +9,22 @@ object NearbyProtocol {
     const val SERVICE_TYPE="_sharemode._tcp."
     fun attributes(profile:ShareProfile,pair:Pairing):Map<String,String> = mapOf(
         "v" to "1", "id" to profile.id, "name" to profile.name,
-        "avatar" to profile.avatar.encode(), "fp" to pair.fingerprint
-    )
+        "avatar" to profile.avatar.legacyEncode(), "fp" to pair.fingerprint
+    )+if(profile.avatar.look==0)emptyMap() else mapOf("look" to profile.avatar.look.toString())
+    // Keep the five-part avatar for older 1.1.0 peers; they ignore the optional look.
+    fun parseAvatar(value:String,look:String?=null):AvatarStyle {
+        val avatar=AvatarStyle.parse(value)
+        if(look==null)return avatar
+        val selected=look.toIntOrNull()
+        require(selected!=null && selected in 0..1){"Invalid avatar style."}
+        return avatar.copy(look=selected)
+    }
     fun parse(host:String,port:Int,attributes:Map<String,String>):NearbyPeer {
         require(attributes["v"]=="1" && privateHost(host) && port in 1024..65535)
         val id=attributes["id"].orEmpty();val name=attributes["name"].orEmpty();val fp=attributes["fp"].orEmpty()
         require(id.matches(Regex("[a-zA-Z0-9-]{8,64}")) && name.isNotBlank() && name.length<=24 && name==profileName(name))
         require(fp.matches(Regex("[a-f0-9]{64}")))
-        return NearbyPeer(id,name,AvatarStyle.parse(attributes["avatar"].orEmpty()),host,port,fp)
+        return NearbyPeer(id,name,parseAvatar(attributes["avatar"].orEmpty(),attributes["look"]),host,port,fp)
     }
     // Compare on both devices: a LAN-discovered name is not an authenticated identity.
     fun transferCode(fingerprint:String,nonce:String):String {

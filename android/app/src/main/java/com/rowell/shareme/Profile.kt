@@ -4,17 +4,23 @@ import android.content.Context
 import java.security.SecureRandom
 import java.util.UUID
 
-data class AvatarStyle(val hair:Int=0,val skin:Int=0,val hairColour:Int=0,val shirt:Int=0,val eyes:Int=0) {
-    fun encode()="$hair.$skin.$hairColour.$shirt.$eyes"
+data class AvatarStyle(val hair:Int=0,val skin:Int=0,val hairColour:Int=0,val shirt:Int=0,val eyes:Int=0,val look:Int=0) {
+    fun legacyEncode()="$hair.$skin.$hairColour.$shirt.$eyes"
+    fun encode()=legacyEncode()+if(look==0)"" else ".$look"
     companion object {
         fun parse(value:String):AvatarStyle {
             val values=value.split('.').map{it.toIntOrNull()}
-            require(values.size==5 && values.all{it!=null}) { "Invalid avatar." }
+            require(values.size in 5..6 && values.all{it!=null}) { "Invalid avatar." }
             val v=values.filterNotNull()
-            require(v[0] in 0..5 && v[1] in 0..4 && v[2] in 0..4 && v[3] in 0..4 && v[4] in 0..2) { "Invalid avatar." }
-            return AvatarStyle(v[0],v[1],v[2],v[3],v[4])
+            val look=v.getOrElse(5){0}
+            require(v[0] in 0..5 && v[1] in 0..4 && v[2] in 0..4 && v[3] in 0..4 && v[4] in 0..2 && look in 0..1) { "Invalid avatar." }
+            return AvatarStyle(v[0],v[1],v[2],v[3],v[4],look)
         }
-        fun random():AvatarStyle=SecureRandom().let{AvatarStyle(it.nextInt(6),it.nextInt(5),it.nextInt(5),it.nextInt(5),it.nextInt(3))}
+        fun random(look:Int?=null):AvatarStyle=SecureRandom().let{
+            val selected=look?:it.nextInt(2)
+            require(selected in 0..1)
+            AvatarStyle(it.nextInt(6),it.nextInt(5),it.nextInt(5),it.nextInt(5),it.nextInt(3),selected)
+        }
     }
 }
 

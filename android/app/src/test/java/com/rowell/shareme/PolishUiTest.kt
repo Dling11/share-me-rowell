@@ -27,13 +27,18 @@ class PolishUiTest {
     @Test fun profileEditorSavesNameAndHairAndSurvivesReload(){
         compose.onNodeWithContentDescription("Edit your name and avatar").performClick()
         compose.onNodeWithText("Your name").performTextReplacement("Rowell Mode")
-        compose.onNodeWithText("Tuft").performClick()
+        compose.onNodeWithText("Girl").performScrollTo().performClick()
+        compose.onNodeWithText("Girl").assertIsSelected()
+        compose.onNodeWithText("Long").performScrollTo().performClick()
         capture("profile-editor")
+        compose.onNodeWithText("Surprise me").performScrollTo().performClick()
+        compose.onNodeWithText("Girl").assertIsSelected()
+        compose.onNodeWithText("Long").performScrollTo().performClick()
         compose.onNodeWithText("Save my look").performScrollTo().performClick()
-        compose.runOnIdle{assertEquals("Rowell Mode",Model.value.profile.name);assertEquals(1,Model.value.profile.avatar.hair);assertEquals(Model.value.profile,ProfileStore.load(compose.activity))}
+        compose.runOnIdle{assertEquals("Rowell Mode",Model.value.profile.name);assertEquals(3,Model.value.profile.avatar.hair);assertEquals(1,Model.value.profile.avatar.look);assertEquals(Model.value.profile,ProfileStore.load(compose.activity))}
     }
     @Test fun nearbyPickerDisplaysAvatarsAndKeepsQrAvailable(){
-        val peer=NearbyPeer("87654321-abcd","Cozy Mochi",AvatarStyle(2,3,2,2,0),"192.168.1.23",48390,"abcdef0123456789".repeat(4))
+        val peer=NearbyPeer("87654321-abcd","Cozy Mochi",AvatarStyle(3,3,2,2,1,look=1),"192.168.1.23",48390,"abcdef0123456789".repeat(4))
         compose.runOnIdle{Model.set{it.copy(files=listOf(Prepared(FileMeta("sample","Weekend notes.txt",12345,"a".repeat(64)),Uri.parse("content://example/document"))),nearbyPeers=listOf(peer))}}
         compose.onNodeWithText("Choose receiver · 1 nearby").performClick()
         assertEquals("browse",org.robolectric.Shadows.shadowOf(compose.activity.application).nextStartedService?.action)
