@@ -4,15 +4,15 @@ All commands run inside this project. Leave the work Docker environment and Tri/
 
 ## Android on Windows
 
-Use JDK 17, Gradle 8.9, Android platform 35 and build-tools 35.0.0. Android Studio and Docker are unnecessary. The current machine has these tools in the ignored `.local/tools/` directory:
+For the Android 1.1.0 development candidate, use JDK 17, Gradle 8.11.1, Android platform 36 and build-tools 35.0.0 with AGP 8.10.1. Android Studio and Docker are unnecessary. The current machine has these tools in the ignored `.local/tools/` directory:
 
 - `.local/tools/jdk17/<jdk-directory>/bin/javac.exe`
-- `.local/tools/gradle-8.9/bin/gradle.bat`
-- `.local/tools/android-sdk/platforms/android-35/android.jar`
+- `.local/tools/gradle-8.11.1/bin/gradle.bat`
+- `.local/tools/android-sdk/platforms/android-36/android.jar`
 - `.local/tools/android-sdk/build-tools/35.0.0/`
 - `.local/tools/android-sdk/platform-tools/` (optional adb for connected devices)
 
-On a new machine, obtain a Windows JDK from [Eclipse Adoptium](https://adoptium.net/temurin/releases/?version=17), [Gradle 8.9](https://services.gradle.org/distributions/gradle-8.9-bin.zip), and the listed SDK packages from [Android's official tools](https://developer.android.com/tools). Verify published checksums before extraction. The tools used here were checked against the JDK publisher's SHA256 and Google's SDK repository archive checksums. Gradle and dependency artifacts were copied read-only into this project; subsequent writes stay here.
+On a new machine, obtain a Windows JDK from [Eclipse Adoptium](https://adoptium.net/temurin/releases/?version=17), [Gradle 8.11.1](https://services.gradle.org/distributions/gradle-8.11.1-bin.zip), and the listed SDK packages from [Android's official tools](https://developer.android.com/tools). Verify published checksums before extraction. The tools used here were checked against the JDK and Gradle publishers' SHA256 and Google's SDK repository archive checksums. Tool and dependency writes stay in this project.
 
 ```powershell
 .\scripts\build-android.ps1
@@ -21,9 +21,9 @@ On a new machine, obtain a Windows JDK from [Eclipse Adoptium](https://adoptium.
 
 For another local toolchain, pass `-JavaDirectory`, `-SdkDirectory` and `-GradleDirectory` to the build; verification accepts the first two. Dependencies and project state stay in `.local/gradle-local` and `.local/android-project-cache`. The ignored `android/local.properties` points to the chosen SDK.
 
-The build runs JVM tests, assembles the optimized signed APK and runs release lint. Output: `dist/Share-Mode-1.0.4.apk`. Java's temporary socket directory is scoped to `.local/nio-temp` because this machine's normal temp directory rejects Java domain-socket connections. Process environment settings are restored afterward; Windows, network and Docker settings are unchanged.
+The build runs JVM and Robolectric/Compose UI tests, assembles the optimized signed APK and AAB, and runs release lint. Outputs: `dist/Share-Mode-1.1.0.apk` and `dist/Share-Mode-1.1.0.aab`. UI tests use Android 15 in Robolectric and save rendered previews under `.local/ui-1.1.0`; this is not a physical-device check. Test dependencies are excluded from the release APK. Java's temporary socket directory is scoped to `.local/nio-temp` because this machine's normal temp directory rejects Java domain-socket connections. Process environment settings are restored afterward.
 
-The existing private `.local/signing/shareme.jks` and password file are required. The build does not replace or regenerate them. Verification checks package `com.rowell.shareme`, version code 4, version name 1.0.4, label Share Mode, Android 10 minimum and SDK 35 target, then compares the signer with the previous release's certificate in `.local/signing/certificate-sha256.txt`. This text is a public certificate fingerprint; the keystore and password remain private. Restore the original private backup if signing files are missing.
+The existing private `.local/signing/shareme.jks` and password file are required. The build does not replace or regenerate them. Verification checks package `com.rowell.shareme`, version code 6, version name 1.1.0, label Share Mode, Android 10 minimum and SDK 36 target, then compares the signer with the previous release's certificate in `.local/signing/certificate-sha256.txt`. This text is a public certificate fingerprint; the keystore and password remain private. Restore the original private backup if signing files are missing.
 
 ## Windows
 
@@ -39,6 +39,8 @@ The installed .NET Framework compiler builds `dist/Windows/Share-Mode.exe`. The 
 The integration harness uses loopback servers and isolated dummy files. It checks transfer framing, integrity failures, resume, cancellation, safe names, existing files and 64-bit sizes. Network/preparation checks and seven actual WinForms selection/Advanced-control checks run separately. `check-qr.ps1` captures the app off-screen and decodes its displayed QR using ZXing 3.5.3 with the project-local JDK. It uses no Docker or phone.
 
 ## Packaging
+
+The existing combined ZIP packaging scripts are pinned to the published 1.0.4 release and its physical-listener proof. Do not use them to publish Android 1.1.0. Its APK/AAB are development candidates pending the physical checks in [PLAY-RELEASE.md](PLAY-RELEASE.md). Windows remains 1.0.4.
 
 ```powershell
 .\scripts\package.ps1

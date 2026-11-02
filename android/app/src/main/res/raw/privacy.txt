@@ -1,0 +1,20 @@
+Share Mode privacy
+Updated November 2, 2026 · By Rowell
+
+Share Mode has no account system, advertising, analytics or cloud file storage. Files go to the device you choose over an encrypted local connection. Incoming transfers require approval. History and unfinished downloads stay on your device.
+
+Your name and avatar are saved locally. While the app is visible on Receive, devices on the same Wi-Fi or hotspot can see your chosen name, avatar settings, a randomly generated app identifier and public connection information. Use a nickname if you prefer. Discovery never advertises filenames, QR pairing secrets, hotspot passwords, contacts, phone numbers or geographic location. Compare the connection-specific transfer code on both phones before sending or accepting a nearby transfer.
+
+Nearby searching and visibility stop when you leave the app. A transfer already in progress may continue with a notification. Idle sharing stops after two minutes in the background. Stop sharing also releases a hotspot created by this app.
+
+Camera access is used when you scan a QR. Nearby Wi-Fi access creates or joins a hotspot; Android 10–12 require Location permission for this Wi-Fi operation, but Share Mode does not derive or store your geographic location. Notifications and a foreground service support background transfers. Install-package access is used only when you choose to install a received app, with Android's approval.
+
+Choosing an installed app reads its installer APK and installed APK parts, and temporarily copies them into app cache. Accounts, private app data and saves are not included. Some apps require a compatible device, the store or additional downloads. The app queries launchable apps and does not request unrestricted access to every installed package.
+
+Use the avatar button to change your name and appearance. Remove unfinished downloads from the menu. Android's Clear storage or uninstall removes preferences, history and app cache; files in Downloads remain until you delete them yourself.
+
+Opening external support or using Android's sharing screen passes control to the selected browser or app, whose privacy practices apply.
+
+Contact and deletion assistance:
+github.com/Dling11/share-me-rowell/issues
+Do not post private files, pairing codes or passwords in a public issue.

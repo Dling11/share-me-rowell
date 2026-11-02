@@ -6,6 +6,8 @@ Previously named Share-Me-Rowell. The source folder, repository URL, pairing for
 
 Android 10+ · Windows 10/11, 64-bit · **1.0.4 preview release**
 
+The Android **1.1.0 development candidate** adds local chibi avatars, nearby receiver selection, installed-app sharing and background-idle cleanup. It targets Android 16 and builds both APK and AAB. It passes 50 local tests and native checks on two Android 16 virtual phones; physical two-phone testing remains pending. Public downloads below remain 1.0.4. See [release preparation](docs/PLAY-RELEASE.md), [build instructions](docs/BUILD.md) and the [privacy policy](docs/PRIVACY.md).
+
 ## Downloads
 
 Download Share Mode 1.0.4:
@@ -22,17 +24,21 @@ Each download ZIP has one outer folder. The Windows ZIP includes the same Androi
 
 ## Screenshots
 
-The Android Send layout, unchanged by the TLS hotfix:
+Android 1.1.0 candidate: Send, the avatar editor and nearby receivers. These are rendered UI previews with example profiles:
 
-<img src="assets/android-send.png" alt="Share Mode on Android, with Choose files and Send, Receive and Recent tabs" width="320">
+<img src="assets/android-send.png" alt="Share Mode 1.1.0 Send screen with an avatar, Choose files and Choose installed app" width="240">
+<img src="assets/android-profile.png" alt="Share Mode avatar editor with a name, hairstyles, skin tones, colours and expressions" width="240">
+<img src="assets/android-nearby.png" alt="Share Mode nearby receiver picker with an example name and avatar, plus a QR fallback" width="240">
 
-The Windows app and selected-file review:
+The published Windows 1.0.4 app and selected-file review:
 
 ![Share Mode 1.0.4 on Windows](assets/windows-dark.png)
 
 ![Selected files in Share Mode 1.0.4](assets/windows-selection.png)
 
 Windows screenshots use example files and an isolated loopback pairing session. Their QR codes do not connect to a real sharing device.
+
+In the Android 1.1.0 candidate, tap the avatar to edit your nearby name and look. Choose files or an installed app, then tap **Choose receiver** to find an open Receive screen on the same Wi-Fi or hotspot. Compare the transfer code on both phones and approve the transfer. **Scan QR · phone or PC** remains available. The usage instructions below describe the published 1.0.4 downloads.
 
 ## Phone → phone
 

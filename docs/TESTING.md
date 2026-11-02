@@ -1,4 +1,4 @@
-# Share Mode 1.0.4 validation
+# Share Mode validation
 
 ## Scope
 
@@ -27,7 +27,7 @@ The regression tests cover socket and engine alias selection with an old identit
 
 The owner reports earlier phone-to-PC transfers and offline installer sharing work. The earlier phone-to-phone test failed on both Wi-Fi and hotspot; its exact failure stage has not yet been established.
 
-Install 1.0.3 on **both** phones as an update. Keep the older APK if needed, but Android may prevent downgrading without uninstalling. Uninstalling removes app data, so do not uninstall just to roll back.
+Install the current signed candidate on **both** phones as an update. Keep the older APK if needed, but Android may prevent downgrading without uninstalling. Uninstalling removes app data, so do not uninstall just to roll back. The 1.1.0 candidate also needs the nearby-receiver and approval checks in `PLAY-RELEASE.md`.
 
 | Test | Steps | Expected result |
 | --- | --- | --- |
@@ -55,3 +55,13 @@ Android documents the callback ordering race in [Read network state](https://dev
 TLS key authorizations: [KeyGenParameterSpec.Builder](https://developer.android.com/reference/android/security/keystore/KeyGenParameterSpec.Builder). Conscrypt signs a digest/padded TLS message prepared by its TLS implementation; allowing that raw private-key operation does not remove TLS encryption or the QR certificate pin check.
 
 Network-request permission: [ConnectivityManager.requestNetwork](https://developer.android.com/reference/android/net/ConnectivityManager#requestNetwork(android.net.NetworkRequest,%20android.net.ConnectivityManager.NetworkCallback,%20android.os.Handler,%20int)).
+
+## Android 1.1.0 emulator lab
+
+Two independent Android 16/API 36 AOSP virtual phones were installed with the signed release APK and connected through Android Emulator's shared virtual Wi-Fi and SoftAP networking. The isolated tools, virtual disks, disposable split-app fixture, UI automation and private results are under `.local/android-lab/`; no existing Docker environment is used. Stop the virtual devices when the run ends.
+
+The lab exercises actual Android framework services, application UIDs, AndroidKeyStore/TLS, NSD, Wi-Fi joining prompts, MediaStore downloads and PackageInstaller. Coverage includes receiver-name/avatar discovery, connection-code confirmation, withholding file details before sender approval, router Wi-Fi and app-created hotspot payloads, multi-file/empty-file/Unicode-content hashes, normal APK updates with retained history/identity, split-app export/installation, a 128 MiB transfer with the receiver on Home, background-idle shutdown and the native notification Stop action. Receiver discovery must also restart when Choose receiver is tapped after stopping, while keeping the selection.
+
+Simulator testing exposed a dense QR rendering issue. QR images now use an integer number of display pixels per module, nearest-neighbour rendering and medium error correction; the encoder avoids masks the bundled reader cannot locate. A deterministic regression covers twelve pairing payloads at three small-phone sizes. This also avoids retaining an 800×800 intermediate bitmap for every code.
+
+Emulator results do not establish physical radio range, throughput, thermal/battery behaviour, manufacturer power-management compatibility, Bluetooth operation or camera optics. The real-device matrix above remains the release gate for those behaviours. Official networking support: [interconnecting emulators](https://developer.android.com/studio/run/emulator-networking-interconnect).

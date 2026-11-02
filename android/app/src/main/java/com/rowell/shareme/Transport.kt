@@ -33,6 +33,7 @@ class Transport(private val context:Context) : Closeable {
     private val guard=Any()
     private var session:Pairing?=null
     private var expires=0L
+    @Volatile private var nextNearbyRequestAt=0L
     private var sources=emptyList<Prepared>()
     private val identity:KeyStore by lazy {
         KeyStore.getInstance("AndroidKeyStore").apply {
@@ -79,16 +80,35 @@ class Transport(private val context:Context) : Closeable {
             if(!privateHost(socket.inetAddress.hostAddress.orEmpty()))return
             socket.soTimeout=15000;socket.startHandshake()
             val input=BufferedInputStream(socket.inputStream,256*1024);val output=BufferedOutputStream(socket.outputStream,256*1024)
-            val request=Wire.read(input);val pair=session?:return
-            if(request.optInt("v")!=1||System.currentTimeMillis()>expires||!MessageDigest.isEqual(request.optString("code").toByteArray(),pair.code.toByteArray())) {Wire.write(output,reject("Pairing expired. Scan the current QR code."));return}
+            var request=Wire.read(input);val pair=session?:return
+            val nearby=request.optString("op")=="nearby"
+            val valid=NearbyProtocol.allowsRequest(nearby,Model.value.nearbyVisible,pair.mode=="receive",System.currentTimeMillis()<=expires,
+                MessageDigest.isEqual(request.optString("code").toByteArray(),pair.code.toByteArray()))
+            if(request.optInt("v")!=1||!valid) {Wire.write(output,reject("Pairing expired. Open Receive again or scan its current QR code."));return}
+            if(nearby && System.nanoTime()<nextNearbyRequestAt){Wire.write(output,reject("Please wait a moment, then try again."));return}
             synchronized(guard){if(claimed){Wire.write(output,reject("This device is busy."));return};claimed=true;owner=true}
             socket.soTimeout=600000
-            val op=request.optString("op")
-            val peer=request.optString("name","Nearby device").take(40)
+            val peer=profileName(request.optString("name","Nearby device"))
+            val avatar=if(nearby)runCatching{AvatarStyle.parse(request.optString("avatar"))}.getOrNull() else null
+            val comparison=if(nearby)NearbyProtocol.transferCode(pair.fingerprint,request.optString("nonce")) else ""
             state{it.copy(connection=PeerConnection.begin(peer,ConnectionPhase.APPROVAL),current="",currentUri="",done=0,total=0)}
+            if(nearby){
+                // Bind human verification to this TLS certificate AND this client's fresh nonce.
+                // No selected filenames are disclosed until the sender confirms this code.
+                state{it.copy(busy=true,verificationCode=comparison,status="Compare the transfer code on both phones. Waiting for the sender…")}
+                socket.soTimeout=120000
+                Wire.write(output,JSONObject().put("ok",true).put("stage","nearby"))
+                request=Wire.read(input)
+                require(request.optInt("v")==1 && request.optString("op")=="push"){"Invalid transfer request."}
+                socket.soTimeout=600000
+            }
+            val op=request.optString("op")
             if(op=="push"&&pair.mode=="receive"){
                 val files=Wire.files(request)
-                if(!approve(peer,files,false)){phase(ConnectionPhase.DECLINED);status("Transfer declined.");Wire.write(output,reject("Transfer declined."));return}
+                if(!approve(peer,files,false,comparison,avatar)){
+                    if(nearby)nextNearbyRequestAt=System.nanoTime()+TimeUnit.SECONDS.toNanos(15)
+                    phase(ConnectionPhase.DECLINED);status("Transfer declined.");Wire.write(output,reject("Transfer declined."));return
+                }
                 receive(input,output,files)
             }else if(op=="pull"&&pair.mode=="send"){
                 if(!approve(peer,sources.map{it.meta},true)){phase(ConnectionPhase.DECLINED);status("Transfer declined.");Wire.write(output,reject("Transfer declined."));return}
@@ -98,7 +118,7 @@ class Transport(private val context:Context) : Closeable {
         }catch(e:Exception){if(!stopped&&owner){phase(if(e.message.orEmpty().contains("declined",true))ConnectionPhase.DECLINED else ConnectionPhase.FAILED);status(e.message?:"Connection interrupted. Scan again to resume.")}}
         finally{socket.close();connections.remove(socket);if(owner){synchronized(guard){claimed=false};state{it.copy(busy=false,approval=null)}}}
     }
-    fun connect(pair:Pairing,files:List<Prepared>,network:Network?=null,sameSubnet:Boolean?=null,localHost:String?=null) {
+    fun connect(pair:Pairing,files:List<Prepared>,network:Network?=null,sameSubnet:Boolean?=null,localHost:String?=null,nearbyPeer:NearbyPeer?=null) {
         if(stopped)return
         synchronized(guard){if(claimed)return;claimed=true}
         try{executor.execute {
@@ -126,6 +146,17 @@ class Transport(private val context:Context) : Closeable {
                 phase(ConnectionPhase.WAITING)
                 if(pair.mode=="receive"){
                     check(files.isNotEmpty()){ "Choose files in Send first." }
+                    if(nearbyPeer!=null){
+                        val nonce=hex(ByteArray(16).also{SecureRandom().nextBytes(it)})
+                        val comparison=NearbyProtocol.transferCode(pair.fingerprint,nonce)
+                        Wire.write(output,JSONObject().put("v",1).put("op","nearby").put("nonce",nonce).put("name",Model.deviceName).put("avatar",Model.value.profile.avatar.encode()))
+                        val ready=Wire.read(input);Wire.success(ready);require(ready.optString("stage")=="nearby"){"This receiver needs a newer version of Share Mode. Use QR instead."}
+                        state{it.copy(verificationCode=comparison)}
+                        if(!approve(pair.name,files.map{it.meta},true,comparison,nearbyPeer.avatar)){
+                            phase(ConnectionPhase.DECLINED);status("Request cancelled. Nothing sent.");return@execute
+                        }
+                        phase(ConnectionPhase.WAITING)
+                    }
                     Wire.write(output,JSONObject().put("v",1).put("op","push").put("code",pair.code).put("name",Model.deviceName).put("files",JSONArray(files.map{it.meta.json()})))
                     status("Waiting for approval on ${pair.name}…")
                     val response=Wire.read(input);Wire.success(response);send(input,output,files,response.getJSONArray("offsets"))
@@ -140,8 +171,8 @@ class Transport(private val context:Context) : Closeable {
             finally{socket?.let{connections.remove(it);runCatching{it.close()}};rawClient?.let{connections.remove(it);runCatching{it.close()}};synchronized(guard){claimed=false};state{it.copy(busy=false,approval=null)}}
         }}catch(_:java.util.concurrent.RejectedExecutionException){synchronized(guard){claimed=false}}
     }
-    private fun approve(peer:String,files:List<FileMeta>,sending:Boolean):Boolean {
-        val approval=Approval(peer,files,sending)
+    private fun approve(peer:String,files:List<FileMeta>,sending:Boolean,deviceCode:String="",avatar:AvatarStyle?=null):Boolean {
+        val approval=Approval(peer,files,sending,deviceCode=deviceCode,avatar=avatar)
         state{it.copy(approval=approval,busy=true,status="Waiting for your approval…",connection=it.connection.advance(ConnectionPhase.APPROVAL))}
         return try{approval.answer.get(90,TimeUnit.SECONDS)}finally{state{it.copy(approval=null)}}
     }

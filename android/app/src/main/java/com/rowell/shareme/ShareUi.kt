@@ -20,11 +20,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
@@ -73,19 +76,36 @@ val Bg=Color(0xFF0C131E);val Panel=Color(0xFF162232);val Mint=Color(0xFF70E2C2);
                 FileThumb(state.currentUri.takeIf{it.isNotEmpty()}?.let(Uri::parse),state.current,Modifier.size(44.dp))
                 Text(state.current,maxLines=3,overflow=TextOverflow.Ellipsis,modifier=Modifier.weight(1f),style=MaterialTheme.typography.bodyMedium)
             }
+            if(state.verificationCode.isNotEmpty() && state.connection.phase in setOf(ConnectionPhase.CONNECTING,ConnectionPhase.WAITING,ConnectionPhase.APPROVAL)){
+                Text("Transfer code · ${state.verificationCode}",color=Mint,style=MaterialTheme.typography.labelLarge)
+                Text("Check that this matches the other phone.",color=Muted,style=MaterialTheme.typography.bodySmall)
+            }
             if(state.total>0)LinearProgressIndicator(progress={(state.done.toDouble()/state.total).toFloat().coerceIn(0f,1f)},modifier=Modifier.fillMaxWidth())else LinearProgressIndicator(Modifier.fillMaxWidth())
             if(state.fileCount>0)Text("File ${state.fileIndex} of ${state.fileCount} · ${size(state.done)} / ${size(state.total)}",color=Muted,style=MaterialTheme.typography.bodySmall)
             else Text(state.status,color=Muted,style=MaterialTheme.typography.bodySmall)
         }
     }
 }
-@Composable fun QrCard(text:String,hint:String) {
-    val bitmap=remember(text) { val matrix=QRCodeWriter().encode(text,BarcodeFormat.QR_CODE,800,800,mapOf(EncodeHintType.MARGIN to 4));Bitmap.createBitmap(800,800,Bitmap.Config.ARGB_8888).also { image->val pixels=IntArray(800*800){index->if(matrix[index%800,index/800])android.graphics.Color.BLACK else android.graphics.Color.WHITE};image.setPixels(pixels,0,800,0,0,800,800) } }
-    Column(Modifier.fillMaxWidth(),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(10.dp)) { Image(bitmap.asImageBitmap(),"Pairing QR code",Modifier.fillMaxWidth(.92f).widthIn(max=320.dp).aspectRatio(1f).clip(RoundedCornerShape(12.dp)).background(Color.White));Text(hint,color=Muted,style=MaterialTheme.typography.bodyMedium) }
+@Composable fun QrCard(text:String,hint:String,maxSize:Dp=320.dp) {
+    val bitmap=remember(text) { val matrix=pairingQr(text);Bitmap.createBitmap(matrix.width,matrix.height,Bitmap.Config.ARGB_8888).also { image->val pixels=IntArray(matrix.width*matrix.height){index->if(matrix[index%matrix.width,index/matrix.width])android.graphics.Color.BLACK else android.graphics.Color.WHITE};image.setPixels(pixels,0,matrix.width,0,0,matrix.width,matrix.height) } }
+    Column(Modifier.fillMaxWidth(),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(10.dp)) {
+        BoxWithConstraints(Modifier.fillMaxWidth(),contentAlignment=Alignment.Center){
+            val density=LocalDensity.current
+            val available=with(density){minOf(maxWidth*.92f,maxSize).roundToPx()}
+            val edge=with(density){qrDisplayPixels(bitmap.width,available).toDp()}
+            Image(bitmap.asImageBitmap(),"Pairing QR code",Modifier.size(edge).clip(RoundedCornerShape(12.dp)).background(Color.White),filterQuality=FilterQuality.None)
+        }
+        Text(hint,color=Muted,style=MaterialTheme.typography.bodyMedium)
+    }
 }
 @Composable fun HotspotControls(state:ScreenState,enabled:Boolean,onStart:()->Unit) {
-    if(state.ssid.isNotEmpty())Column(verticalArrangement=Arrangement.spacedBy(4.dp)) { Text("Hotspot is on",color=Mint,fontWeight=FontWeight.SemiBold);SelectionContainer{Text("${state.ssid}\nPassword: ${state.password}",color=Muted,style=MaterialTheme.typography.bodySmall)} }
-    else OutlinedButton(onClick=onStart,enabled=enabled,modifier=Modifier.fillMaxWidth()){Icon(Icons.Rounded.Wifi,null,Modifier.size(18.dp));Spacer(Modifier.width(8.dp));Text("No Wi-Fi? Create a hotspot")}
+    var manual by remember{mutableStateOf(false)}
+    if(state.ssid.isNotEmpty())Column(verticalArrangement=Arrangement.spacedBy(4.dp)) {
+        Text("Offline hotspot is on",color=Mint,fontWeight=FontWeight.SemiBold)
+        Text("Scan the QR in Share Mode to join. No password typing needed.",color=Muted,style=MaterialTheme.typography.bodySmall)
+        TextButton(onClick={manual=!manual}){Text(if(manual)"Hide network details" else "Join manually")}
+        if(manual)SelectionContainer{Text("${state.ssid}\nPassword: ${state.password}",color=Muted,style=MaterialTheme.typography.bodySmall)}
+    } else OutlinedButton(onClick=onStart,enabled=enabled,modifier=Modifier.fillMaxWidth()){Icon(Icons.Rounded.Wifi,null,Modifier.size(18.dp));Spacer(Modifier.width(8.dp));Text("No Wi-Fi? Create an offline hotspot")}
 }
 fun fileType(name:String)=name.substringAfterLast('.',"FILE").uppercase().take(10)
 fun size(bytes:Long):String { var value=bytes.toDouble();val units=arrayOf("B","KB","MB","GB","TB");var index=0;while(value>=1024&&index<4){value/=1024;index++};return if(index==0)"$bytes B" else "%.1f %s".format(value,units[index]) }
