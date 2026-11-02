@@ -14,7 +14,7 @@ foreach($artifact in $metadata.artifacts){
         $names=@($archive.Entries | ForEach-Object {$_.FullName.Replace('\','/')})
         $outer=@($names | ForEach-Object {($_ -split '/')[0]} | Sort-Object -Unique)
         if($outer.Count -ne 1){throw 'Archive needs exactly one outer folder'}
-        if($names | Where-Object {$_ -match '\.jks$|password\.txt|\.local/|\.git/|\.keystore$|local.properties$'}){throw 'Private/development file found in package'}
+        if($names | Where-Object {$_ -match '\.jks$|password\.txt|\.local/|\.private/|\.git/|\.keystore$|local.properties$|(^|/)(AGENTS|GEMINI|HANDOFF)\.md$|(^|/)\.env(\.|$)'}){throw 'Private/development file found in package'}
         if($names | Where-Object {$_ -match 'Share-Me-Rowell.*\.(apk|exe)$'}){throw 'Old application build found in renamed package'}
         $embedded=0
         foreach($entry in $archive.Entries | Where-Object {$_.FullName.EndsWith('.apk')}){

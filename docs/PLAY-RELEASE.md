@@ -1,6 +1,6 @@
 # Android 1.1.0 release preparation
 
-This is a local development candidate. The public Android/Windows release remains 1.0.4 until a new release is explicitly published.
+Version 1.1.0 is a GitHub public preview, separate from a Play Store submission. Its Windows bundle includes Android 1.1.0 and the unchanged Windows application from the 1.0.4 release.
 
 ## Included
 

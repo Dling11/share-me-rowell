@@ -4,33 +4,34 @@ Local file sharing for **Android and Windows**, by Rowell. Send photos, videos, 
 
 Previously named Share-Me-Rowell. The source folder, repository URL, pairing format, Android package/signing identity and existing download/history locations are retained for compatibility.
 
-Android 10+ · Windows 10/11, 64-bit · **1.0.4 preview release**
+Android 10+ · Windows 10/11, 64-bit · **1.1.0 preview release**
 
-The Android **1.1.0 development candidate** adds local chibi avatars with Boy/Girl looks, nearby receiver selection, installed-app sharing and background-idle cleanup. It targets Android 16 and builds both APK and AAB. The current candidate passes 51 local tests, including avatar save/reload and older-peer compatibility. The sharing flows passed native checks on two Android 16 virtual phones before the Boy/Girl addition; physical two-phone testing remains pending. Public downloads below remain 1.0.4. See [release preparation](docs/PLAY-RELEASE.md), [build instructions](docs/BUILD.md) and the [privacy policy](docs/PRIVACY.md).
+Android **1.1.0** adds Boy/Girl chibi profiles, nearby receiver selection, installed-app sharing and background-idle cleanup in a roughly 2.59 MB APK. The Windows bundle includes the same new Android installer; Windows application features are unchanged from 1.0.4. Read [what's new](docs/RELEASE-1.1.0.md), [build instructions](docs/BUILD.md) and the [privacy policy](docs/PRIVACY.md). This remains a preview; physical two-phone testing and [Play release preparation](docs/PLAY-RELEASE.md) are separate.
 
 ## Downloads
 
-Download Share Mode 1.0.4:
+Download Share Mode 1.1.0:
 
-- [Android APK](https://github.com/Dling11/share-me-rowell/releases/download/v1.0.4/Share-Mode-1.0.4.apk)
-- [Android ZIP with instructions](https://github.com/Dling11/share-me-rowell/releases/download/v1.0.4/Share-Mode-Android-1.0.4.zip)
-- [Windows portable ZIP](https://github.com/Dling11/share-me-rowell/releases/download/v1.0.4/Share-Mode-Windows-1.0.4.zip)
-- [Complete package](https://github.com/Dling11/share-me-rowell/releases/download/v1.0.4/Share-Mode-Complete-1.0.4.zip)
-- [Checksums](https://github.com/Dling11/share-me-rowell/releases/download/v1.0.4/SHA256SUMS.txt) and [validation metadata](https://github.com/Dling11/share-me-rowell/releases/download/v1.0.4/VERSION.json)
+- [Android APK](https://github.com/Dling11/share-me-rowell/releases/download/v1.1.0/Share-Mode-1.1.0.apk)
+- [Android ZIP with instructions](https://github.com/Dling11/share-me-rowell/releases/download/v1.1.0/Share-Mode-Android-1.1.0.zip)
+- [Windows portable ZIP](https://github.com/Dling11/share-me-rowell/releases/download/v1.1.0/Share-Mode-Windows-1.1.0.zip)
+- [Complete package](https://github.com/Dling11/share-me-rowell/releases/download/v1.1.0/Share-Mode-Complete-1.1.0.zip)
+- [Checksums](https://github.com/Dling11/share-me-rowell/releases/download/v1.1.0/SHA256SUMS.txt) and [validation metadata](https://github.com/Dling11/share-me-rowell/releases/download/v1.1.0/VERSION.json)
+- Developers: [signed Android App Bundle](https://github.com/Dling11/share-me-rowell/releases/download/v1.1.0/Share-Mode-1.1.0.aab). Install the APK on a phone; the AAB is for Play submission tooling.
 
-Version 1.0.4 fixes an Android receiver TLS-key authorization failure reproduced on a real phone in 1.0.3. Earlier releases remain available under [all releases](https://github.com/Dling11/share-me-rowell/releases). GitHub's Source code ZIP is for development, not installation.
+Version 1.1.0 retains the receiver TLS fix from 1.0.4 and the existing installation identity. Install the APK as an update without uninstalling. Earlier releases remain available under [all releases](https://github.com/Dling11/share-me-rowell/releases). GitHub's Source code ZIP is for development, not installation.
 
 Each download ZIP has one outer folder. The Windows ZIP includes the same Android APK for its local download QR. Keep `QRCoder.dll` beside `Share-Mode.exe`.
 
 ## Screenshots
 
-Android 1.1.0 candidate: Send, the avatar editor and nearby receivers. These are rendered UI previews with example profiles:
+Android 1.1.0: Send, the avatar editor and nearby receivers. These are rendered UI previews with example profiles:
 
 <img src="assets/android-send.png" alt="Share Mode 1.1.0 Send screen with an avatar, Choose files and Choose installed app" width="240">
 <img src="assets/android-profile.png" alt="Share Mode avatar editor with a name, hairstyles, skin tones, colours and expressions" width="240">
 <img src="assets/android-nearby.png" alt="Share Mode nearby receiver picker with an example name and avatar, plus a QR fallback" width="240">
 
-The published Windows 1.0.4 app and selected-file review:
+The Windows application, unchanged from 1.0.4, and selected-file review:
 
 ![Share Mode 1.0.4 on Windows](assets/windows-dark.png)
 
@@ -38,16 +39,16 @@ The published Windows 1.0.4 app and selected-file review:
 
 Windows screenshots use example files and an isolated loopback pairing session. Their QR codes do not connect to a real sharing device.
 
-In the Android 1.1.0 candidate, tap the avatar to edit your nearby name and look. Choose **Boy** or **Girl**, then customize any hair, colours and expression. **Surprise me** keeps your chosen style. Choose files or an installed app, then tap **Choose receiver** to find an open Receive screen on the same Wi-Fi or hotspot. Compare the transfer code on both phones and approve the transfer. **Scan QR · phone or PC** remains available. The usage instructions below describe the published 1.0.4 downloads.
+Tap the avatar to edit your nearby name and look. Choose **Boy** or **Girl**, then customize any hair, colours and expression. **Surprise me** keeps your chosen style. Older 1.1.0 peers can still display the basic hair/colours; Android 1.0.4 and Windows connect through QR.
 
 ## Phone → phone
 
 1. Install the APK on both phones. It updates the existing app without uninstalling it.
-2. Put the phones on the same Wi-Fi. Without a router, open **Receive → No Wi-Fi? Create a hotspot** on the receiving phone.
-3. On the sending phone, open **Send → Choose files**. Select one file or up to 16 together.
+2. Open **Receive** on the receiving phone and put both phones on the same Wi-Fi. Without a router, use **No Wi-Fi? Create an offline hotspot**.
+3. On the sending phone, open **Send → Choose files**, or **Choose installed app**. Select one file or up to 16 together.
 4. Review the filenames, sizes and previews. **Add more files**, remove a row or **Clear all** as needed. Tap a row for the full filename and an Open action.
-5. Tap **Scan receiver to send** and scan the receiving phone's code. For an app-created hotspot, approve Android's request to join the named network.
-6. The receiving phone reviews and approves the batch. Progress and the current filename stay at the top on all tabs.
+5. Tap **Choose receiver** and select their name/avatar. Compare the transfer code on both phones and confirm before sending or receiving. For an app-created hotspot or an older Android version, use **Scan QR · phone or PC**; approve Android's request to join the named hotspot.
+6. The receiving phone reviews and approves the batch. Progress and the current filename stay at the top on all tabs. Nearby names/avatars are visible only while Receive is open in the foreground.
 
 No mobile data is needed. On Android 13+, allow Nearby Wi-Fi access for hotspot creation/joining. On Android 10–12, allow Location and enable Location in Settings. You may also use the phone's normal Hotspot/Wi-Fi settings and refresh the receiver code after both phones connect.
 
@@ -57,7 +58,7 @@ The sender's **More connection options → Show sender code** remains available 
 
 The **phone scans the PC's code** in both directions:
 
-- **Phone → PC:** Windows: **Receive files**. Phone: **Send → Choose files → Scan receiver to send**.
+- **Phone → PC:** Windows: **Receive files**. Phone: **Send → Choose files → Choose receiver → Scan QR · phone or PC**.
 - **PC → phone:** Windows: **Send files → Add files** (or drag files). Phone: **Receive → Scan sender code · phone or PC**.
 
 Use the same Wi-Fi/router/hotspot. Ethernet on the same router also works for the PC. Review and approve requests. Files arrive in **Downloads/SHARE-ME-ROWELL**, the existing folder name on both platforms.
@@ -68,7 +69,7 @@ The Windows **Get phone app** button offers the included Android installer throu
 
 There are three tabs: **Send**, **Receive** and **Recent**. The selected files come first; the main scan/send button stays available below the list. Image thumbnails use bounded decoding, supported video/document thumbnails come from Android, and other files show a type label. Full filenames are available in file details; arbitrary files are not rendered inside the app.
 
-The top-right menu contains **Share the app**, **Wi-Fi settings**, **Paste pairing link**, **Stop sharing & hotspot**, unfinished-download cleanup and About.
+The top-right menu contains **Your name & avatar**, **Share Mode installer**, **Wi-Fi settings**, **Paste pairing link**, **Stop sharing & hotspot**, unfinished-download cleanup and About.
 
 Bluetooth is **optional**. **More connection options → Android sharing · Bluetooth optional** opens Android's share sheet for selected files. **Share the app → Share installer via Android** does the same for this app's APK. Android handles Bluetooth pairing, receiving and progress; Bluetooth is not required for Wi-Fi/hotspot transfers.
 
@@ -76,7 +77,7 @@ Bluetooth is **optional**. **More connection options → Android sharing · Blue
 
 Each connection lasts for one batch. The transfer banner shows the device, current file, file count, bytes and connection stage. **Cancel** can stop file preparation or cancel an active transfer after confirmation. Removing selected files preserves the originals.
 
-**Stop sharing & hotspot** also closes a hotspot created by the app. A finished, declined or interrupted connection is shown as a terminal result. Scan again for a new batch. There is no permanent idle connection or automatic nearby-device discovery.
+**Stop sharing & hotspot** also closes a hotspot created by the app. A finished, declined or interrupted connection is shown as a terminal result. Choose a receiver or scan again for a new batch. Nearby discovery stops in the background. Active transfers can continue with a notification; idle sharing shuts down after two minutes. **Stop sharing** is also available in that notification.
 
 Pairing codes expire after ten minutes. **Refresh code** generates a new one. Idle codes refresh when local addresses change. Guest Wi-Fi/client isolation, VPN routing or firewalls may block local communication; use a trusted router or a phone hotspot. Subnet hints suggest a possible mismatch and do not claim to identify Wi-Fi network names.
 
@@ -87,7 +88,7 @@ Pairing codes expire after ten minutes. **Refresh code** generates a new one. Id
 - After interruption, reconnect and send the same files to resume compatible partial downloads.
 - Completed transfers appear in **Recent**. Received APKs install only through Android's explicit installation approval.
 - **Remove unfinished downloads** frees interrupted Android downloads while keeping completed files. Windows partials remain in `.shareme-parts` inside the receive folder.
-- ZIP a folder before sending it. Direct folder selection, automatic discovery, long-distance internet transfers and integrated Bluetooth progress are not implemented.
+- ZIP a folder before sending it. Direct folder selection, long-distance internet transfers and integrated Bluetooth progress are not implemented.
 
 ## Windows connection help
 

@@ -40,7 +40,7 @@ The integration harness uses loopback servers and isolated dummy files. It check
 
 ## Packaging
 
-The existing combined ZIP packaging scripts are pinned to the published 1.0.4 release and its physical-listener proof. Do not use them to publish Android 1.1.0. Its APK/AAB are development candidates pending the physical checks in [PLAY-RELEASE.md](PLAY-RELEASE.md). Windows remains 1.0.4.
+The ZIP packaging script targets preview 1.1.0. It requires signed APK/AAB verification, all 51 local Android tests, release lint, Windows checks and the two-emulator native checks for the exact APK. Every embedded phone installer must match the standalone APK. The Windows application is unchanged from the 1.0.4 release; its new 1.1.0 bundle includes the updated phone installer. Physical checks in [PLAY-RELEASE.md](PLAY-RELEASE.md) remain separate from this GitHub preview.
 
 ```powershell
 .\scripts\package.ps1
