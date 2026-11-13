@@ -1,8 +1,8 @@
-param([string]$WindowsVersion='1.2.14',[string]$AndroidVersion='1.2.7')
+param([string]$WindowsVersion='1.2.14',[string]$AndroidVersion='1.2.8',[string]$ReleaseTag='v1.2.15')
 $ErrorActionPreference='Stop'
-if($WindowsVersion -notmatch '^\d+\.\d+\.\d+$' -or $AndroidVersion -notmatch '^\d+\.\d+\.\d+$'){throw 'Invalid release versions'}
+if($WindowsVersion -notmatch '^\d+\.\d+\.\d+$' -or $AndroidVersion -notmatch '^\d+\.\d+\.\d+$' -or $ReleaseTag -notmatch '^v\d+\.\d+\.\d+$'){throw 'Invalid release versions'}
 $root=(Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
-$dist=Join-Path $root 'dist';$tag='v'+$WindowsVersion
+$dist=Join-Path $root 'dist';$tag=$ReleaseTag;$notes='docs/RELEASE-'+$tag.Substring(1)+'.md'
 $exe=Join-Path $dist 'Windows/Share-Mode.exe';$apk=Join-Path $dist ('Share-Mode-'+$AndroidVersion+'.apk');$aab=Join-Path $dist ('Share-Mode-'+$AndroidVersion+'.aab')
 function Hash([string]$file){(Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash.ToLowerInvariant()}
 $windows=Get-Content -LiteralPath (Join-Path $root ('.local/verification-'+$WindowsVersion+'.json')) -Raw | ConvertFrom-Json
@@ -22,7 +22,7 @@ try{
     Copy-Item -LiteralPath $apk -Destination $phone
     Copy-Item -LiteralPath (Join-Path $root 'LICENSE'),(Join-Path $root 'THIRD_PARTY_NOTICES.md') -Destination $phone
     Copy-Item -LiteralPath (Join-Path $root 'licenses') -Destination $phone -Recurse
-    foreach($folder in @($pc,$phone)){New-Item -ItemType Directory -Path (Join-Path $folder 'docs') | Out-Null;Copy-Item -LiteralPath (Join-Path $root 'docs/PRIVACY.md'),(Join-Path $root 'docs/RELEASE-1.2.14.md') -Destination (Join-Path $folder 'docs')}
+    foreach($folder in @($pc,$phone)){New-Item -ItemType Directory -Path (Join-Path $folder 'docs') | Out-Null;Copy-Item -LiteralPath (Join-Path $root 'docs/PRIVACY.md'),(Join-Path $root $notes) -Destination (Join-Path $folder 'docs')}
     $pcGuide=@"
 SHARE MODE - Windows $WindowsVersion / included Android $AndroidVersion
 
@@ -34,7 +34,7 @@ Files arrive in Downloads\SHARE-ME-ROWELL. Reconnect and send the same files to 
 Your existing profile, identity, history and progress stay in their existing locations.
 Your adventurer opens appearance, characters and progress. Mastery skills are optional.
 Known preview issue: Zoro changes apparent scale between idle and his mastery attack.
-See docs/RELEASE-1.2.14.md and docs/PRIVACY.md.
+See $notes and docs/PRIVACY.md.
 "@
     $phoneGuide=@"
 SHARE MODE - Android $AndroidVersion
@@ -46,8 +46,11 @@ Compare the code and approve the files. Reconnect and resend the same files to r
 Android's system Share menu can open selected files in Share Mode.
 App sharing copies installers only; accounts, private app data and saves are excluded.
 Existing received files, profile, history and progress are preserved.
-Cinematic in-card mastery skills are currently a Windows feature.
-See docs/RELEASE-1.2.14.md and docs/PRIVACY.md.
+HD and Pixel portraits, the curated character collection and in-card skills now match the approved Windows artwork.
+Your personal Boy/Girl look saves automatically. Signature characters equip as fixed designs.
+Use Starter/Mastery to preview outfits. Previewing never equips a locked character or earns XP.
+Tap Madara/Sukuna, or Zoro's mastery preview, to play a skill within the card.
+See $notes and docs/PRIVACY.md.
 "@
     [IO.File]::WriteAllText((Join-Path $pc 'START-HERE.txt'),$pcGuide,[Text.UTF8Encoding]::new($false))
     [IO.File]::WriteAllText((Join-Path $phone 'START-HERE.txt'),$phoneGuide,[Text.UTF8Encoding]::new($false))

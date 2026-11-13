@@ -61,7 +61,7 @@ object Adventure {
     fun specialSheet(role:Int):Int {require(isSpecial(role));return when(role){in 8..10->0;11->1;else->role-10}}
     fun specialCels(role:Int)=when{role>=12->12;role==11->8;else->4}
     fun specialRow(role:Int,level:Int):Int {require(isSpecial(role));return when(role){11->if(level>=95)2 else 0;in 8..10->(role-8)*2+if(level>=listOf(80,90,100)[role-8])1 else 0;else->if(level>=favouriteMasteries[role-12])3 else 0}}
-    fun nextRole(level:Int)=roles.filter{it.level>level}.minByOrNull{it.level}
+    fun nextRole(level:Int)=CharacterRoster.roles.map{roles[it]}.filter{it.level>level}.minByOrNull{it.level}
     fun signature(style:AvatarStyle,role:Int):AvatarStyle=when(role){
         7->style.copy(role=role,hair=0,hairColour=0,eyes=3,shirt=1)
         8->style.copy(role=role,hair=2,hairColour=5,eyes=3,element=2)

@@ -32,15 +32,17 @@ object ProfileStore {
     fun load(context:Context):ShareProfile {
         val preferences=context.getSharedPreferences("nearby-profile",Context.MODE_PRIVATE)
         val id=preferences.getString("id",null)?:UUID.randomUUID().toString().also{preferences.edit().putString("id",it).apply()}
-        val style=preferences.getString("avatar",null)?.let{runCatching{AvatarStyle.parse(it)}.getOrNull()}?:AvatarStyle.random().also{preferences.edit().putString("avatar",it.encode()).apply()}
+        val stored=preferences.getString("avatar",null)?.let{runCatching{AvatarStyle.parse(it)}.getOrNull()}?:AvatarStyle.random()
+        val style=stored.copy(role=CharacterRoster.current(stored.role))
+        if(preferences.getString("avatar",null)!=style.encode())preferences.edit().putString("avatar",style.encode()).apply()
         val name=preferences.getString("name",null)?:SecureRandom().let{random->
             "${listOf("Happy","Cozy","Sunny","Tiny","Peachy","Sleepy")[random.nextInt(6)]} ${listOf("Sprout","Mochi","Bean","Panda","Bun","Cloud")[random.nextInt(6)]} ${random.nextInt(90)+10}"
         }.also{preferences.edit().putString("name",it).apply()}
         return ShareProfile(id,profileName(name),style)
     }
     fun save(context:Context,profile:ShareProfile) {
-        val role=profile.avatar.role.takeIf{Adventure.canEquip(it,Model.value.journey.level)}?:0
-        val personal=if(Adventure.isSpecial(role))load(context).avatar.copy(role=role)else profile.avatar.copy(role=role)
+        val role=CharacterRoster.current(profile.avatar.role).takeIf{Adventure.canEquip(it,Model.value.journey.level)}?:0
+        val personal=if(CharacterRoster.fixed(role))load(context).avatar.copy(role=role)else profile.avatar.copy(role=role)
         val clean=profile.copy(name=profileName(profile.name),avatar=personal)
         context.getSharedPreferences("nearby-profile",Context.MODE_PRIVATE).edit().putString("name",clean.name).putString("avatar",clean.avatar.encode()).apply()
         // The listener secret and socket stay valid; only the name displayed in its QR changes.
@@ -48,4 +50,8 @@ object ProfileStore {
     }
     fun animations(context:Context)=context.getSharedPreferences("nearby-profile",Context.MODE_PRIVATE).getBoolean("animations",true)
     fun animations(context:Context,enabled:Boolean){context.getSharedPreferences("nearby-profile",Context.MODE_PRIVATE).edit().putBoolean("animations",enabled).apply();Model.set{it.copy(avatarAnimations=enabled)}}
+    fun pixels(context:Context)=context.getSharedPreferences("nearby-profile",Context.MODE_PRIVATE).getBoolean("portrait-pixels",false)
+    fun pixels(context:Context,enabled:Boolean){context.getSharedPreferences("nearby-profile",Context.MODE_PRIVATE).edit().putBoolean("portrait-pixels",enabled).apply();Model.set{it.copy(avatarPixels=enabled)}}
+    fun autoSkills(context:Context)=context.getSharedPreferences("nearby-profile",Context.MODE_PRIVATE).getBoolean("auto-skills",true)
+    fun autoSkills(context:Context,enabled:Boolean){context.getSharedPreferences("nearby-profile",Context.MODE_PRIVATE).edit().putBoolean("auto-skills",enabled).apply();Model.set{it.copy(avatarAutoSkills=enabled)}}
 }

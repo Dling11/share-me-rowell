@@ -2,25 +2,25 @@
 
 Lightweight local file sharing for Android and Windows, by Rowell. Send photos, videos, installed Android apps and other files over the same Wi-Fi or an offline hotspot. No account or cloud upload is required.
 
-**Preview: Windows 1.2.14 · Android 1.2.7**
+**Preview: Windows 1.2.14 · Android 1.2.8**
 Android 10+ · Windows 10/11, 64-bit
 
 ## Downloads
 
-- [Android APK 1.2.7](https://github.com/Dling11/share-me-rowell/releases/download/v1.2.14/Share-Mode-1.2.7.apk)
-- [Windows portable ZIP 1.2.14](https://github.com/Dling11/share-me-rowell/releases/download/v1.2.14/Share-Mode-Windows-1.2.14.zip)
-- [Android ZIP with instructions](https://github.com/Dling11/share-me-rowell/releases/download/v1.2.14/Share-Mode-Android-1.2.7.zip)
-- [Release notes](https://github.com/Dling11/share-me-rowell/releases/tag/v1.2.14) · [Checksums](https://github.com/Dling11/share-me-rowell/releases/download/v1.2.14/SHA256SUMS.txt)
+- [Android APK 1.2.8](https://github.com/Dling11/share-me-rowell/releases/download/v1.2.15/Share-Mode-1.2.8.apk)
+- [Windows portable ZIP 1.2.14](https://github.com/Dling11/share-me-rowell/releases/download/v1.2.15/Share-Mode-Windows-1.2.14.zip)
+- [Android ZIP with instructions](https://github.com/Dling11/share-me-rowell/releases/download/v1.2.15/Share-Mode-Android-1.2.8.zip)
+- [Release notes](https://github.com/Dling11/share-me-rowell/releases/tag/v1.2.15) · [Checksums](https://github.com/Dling11/share-me-rowell/releases/download/v1.2.15/SHA256SUMS.txt)
 
 Install the APK over your existing app. On Windows, extract the ZIP and open Share-Mode.exe; keep QRCoder.dll and the Android folder beside it. Your existing files, history and progress are retained. The Windows package includes the same Android APK for its local download QR.
 
 ## What's new
 
-- Android: share from the system Share menu, choose installed apps and resume interrupted transfers.
+- Android: the approved HD/Pixel portraits, redesigned customizable Boy/Girl avatars, fixed character collection, Starter/Mastery previews and in-card Madara/Sukuna/Zoro skills. Retired class/rank galleries are replaced by the character Journey.
 - Both platforms: left/right transfer avatars with tap animations, saved avatar profiles, a character collection and XP earned from verified new transfers. Sharing features stay available at every level.
-- Windows: a clearer desktop layout, sharper previews and optional character mastery skills. Zoro's idle-to-skill size transition still needs polish.
+- Windows 1.2.14 is unchanged; its ZIP now includes Android 1.2.8. System Share-menu entry, installed-app sharing and resume remain available. Zoro's idle-to-skill size transition still needs polish.
 
-[Full changes](docs/RELEASE-1.2.14.md) · [Privacy](docs/PRIVACY.md)
+[Full changes](docs/RELEASE-1.2.15.md) · [Privacy](docs/PRIVACY.md)
 
 ## Screenshots
 

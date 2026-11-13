@@ -12,7 +12,7 @@ import org.robolectric.annotation.Config
 class GearProgressionTest {
     @Test fun seriousAndAnimeClassesHaveEarnedStarterAndMasteryForms(){
         assertEquals(listOf(12,40,65,85,50),Adventure.roles.drop(7).take(5).map{it.level})
-        assertEquals("Silent Ronin",Adventure.nextRole(8)!!.name)
+        assertEquals("Luffy-inspired",Adventure.nextRole(8)!!.name)
         for((role,mastery)in listOf(7 to 55,8 to 80,9 to 90,10 to 100)){
             assertFalse(Adventure.canEquip(role,Adventure.roles[role].level-1))
             assertFalse(Adventure.gear(role,mastery-1).ornate)

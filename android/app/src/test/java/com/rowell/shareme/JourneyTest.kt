@@ -38,7 +38,7 @@ class JourneyTest {
             assertEquals("My device",special.name)
         }
         ProfileStore.save(context,ProfileStore.load(context).copy(avatar=ProfileStore.load(context).avatar.copy(role=7)))
-        assertEquals(initial.avatar.copy(role=7),ProfileStore.load(context).avatar)
+        assertEquals(initial.avatar.copy(role=0),ProfileStore.load(context).avatar)
         ProfileStore.save(context,ProfileStore.load(context).copy(avatar=initial.avatar.copy(hair=2,role=7)))
         assertEquals(2,ProfileStore.load(context).avatar.hair)
     }

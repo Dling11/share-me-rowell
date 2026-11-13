@@ -23,9 +23,11 @@ import java.text.NumberFormat
 private fun points(value:Long)=NumberFormat.getIntegerInstance().format(value)
 @Composable fun JourneyProgress(journey:AdventurerJourney) {
     val colour=Color(journey.rank.colour)
-    Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically){
-        Text("Lv. ${journey.level} · ${journey.rank.name}",color=colour,fontWeight=FontWeight.Bold,fontFamily=FontFamily.Monospace,style=MaterialTheme.typography.labelLarge)
-        Text(if(journey.level==100)"MAX" else "${points(journey.levelXp)} / ${points(journey.neededXp)} XP",color=Muted,style=MaterialTheme.typography.labelSmall)
+    BoxWithConstraints(Modifier.fillMaxWidth()){
+        @Composable fun Level(){Text("Lv. ${journey.level} · ${journey.rank.name}",color=colour,fontWeight=FontWeight.Bold,fontFamily=FontFamily.Monospace,style=MaterialTheme.typography.labelLarge,maxLines=1)}
+        @Composable fun Experience(){Text(if(journey.level==100)"MAX" else "${points(journey.levelXp)} / ${points(journey.neededXp)} XP",color=Muted,style=MaterialTheme.typography.labelSmall,maxLines=1)}
+        if(maxWidth<230.dp)Column{Level();Experience()}
+        else Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically){Level();Experience()}
     }
     Canvas(Modifier.fillMaxWidth().height(10.dp).semantics{progressBarRangeInfo=ProgressBarRangeInfo(journey.fraction,0f..1f)}){
         drawRect(colour.copy(alpha=.25f))
@@ -53,6 +55,11 @@ private fun points(value:Long)=NumberFormat.getIntegerInstance().format(value)
     var avatar by remember{mutableStateOf(profile.avatar)}
     var tab by remember{mutableIntStateOf(0)}
     var preview by remember{mutableIntStateOf(profile.avatar.role)}
+    var previewLevel by remember{mutableIntStateOf(journey.level)}
+    var skillRequest by remember{mutableIntStateOf(0)}
+    val context=androidx.compose.ui.platform.LocalContext.current
+    val preferences by Model.state.collectAsState()
+    fun select(role:Int,at:Int=Adventure.roles[role].level){preview=role;previewLevel=at;skillRequest=0}
     fun save(style:AvatarStyle=avatar,newName:String=name){avatar=style;name=newName;onSave(profile.copy(name=newName,avatar=style))}
     fun close(){onSave(profile.copy(name=name,avatar=avatar));onDismiss()}
     fun previewStyle(role:Int)=avatar.copy(role=role)
@@ -64,29 +71,40 @@ private fun points(value:Long)=NumberFormat.getIntegerInstance().format(value)
                 Text("Your adventurer",style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold)
                 Text("Saved automatically",color=Mint,style=MaterialTheme.typography.labelSmall)
             }
+            Row(horizontalArrangement=Arrangement.spacedBy(6.dp),verticalAlignment=Alignment.CenterVertically){
+                FilterChip(selected=!preferences.avatarPixels,onClick={ProfileStore.pixels(context,false)},label={Text("HD")})
+                FilterChip(selected=preferences.avatarPixels,onClick={ProfileStore.pixels(context,true)},label={Text("Pixel")})
+                Text("Portrait detail",color=Muted,style=MaterialTheme.typography.labelSmall)
+            }
             if(!keyboard)Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)){
-                ChibiAvatar(if(tab==1)previewStyle(preview)else avatar,Modifier.size(if(compact)100.dp else 128.dp),"Your adventurer preview. Tap to cheer.",journey.level,animated=animations,interactive=true,gearLevel=if(tab==1)maxOf(journey.level,Adventure.roles[preview].level)else journey.level)
+                ChibiAvatar(if(tab!=0)previewStyle(preview)else avatar,Modifier.size(if(compact)100.dp else 144.dp),"Your adventurer preview. Tap to animate.",journey.level,animated=animations,interactive=true,gearLevel=if(tab!=0)previewLevel else journey.level,skillRequest=skillRequest,autoSkill=preferences.avatarAutoSkills)
                 Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(8.dp)){
-                    val role=Adventure.roles[if(tab==1)preview else avatar.role]
-                    Text(Adventure.gear(if(tab==1)preview else avatar.role,if(tab==1)maxOf(journey.level,role.level)else journey.level).title,fontWeight=FontWeight.SemiBold,fontFamily=FontFamily.Monospace)
-                    if(tab==1&&preview!=avatar.role){
+                    val selected=if(tab!=0)preview else avatar.role
+                    val role=Adventure.roles[selected]
+                    Text(if(selected==0)"Your personal look"else Adventure.gear(selected,if(tab!=0)previewLevel else journey.level).title,fontWeight=FontWeight.SemiBold)
+                    if(tab!=0&&preview!=avatar.role){
                         if(Adventure.canEquip(preview,journey.level))TextButton(onClick={save(avatar.copy(role=preview))}){Text("Equip character")}
                         else Text("Unlocks at Lv. ${role.level}",color=Color(0xFFFFDA89),style=MaterialTheme.typography.bodySmall)
                     }
                     JourneyProgress(journey)
-                    if(animations)Text("Tap avatar to cheer",color=Muted,style=MaterialTheme.typography.labelSmall)
+                    if(CharacterSkills.available(selected,if(tab!=0)previewLevel else journey.level))TextButton(enabled=animations,onClick={skillRequest++}){Text("Use skill")}
+                    else if(animations)Text("Tap avatar to cheer",color=Muted,style=MaterialTheme.typography.labelSmall)
                 }
             }
-            TabRow(selectedTabIndex=tab,containerColor=Bg){listOf("Style","Characters","Ranks").forEachIndexed{i,label->Tab(selected=tab==i,onClick={tab=i;preview=avatar.role},content={Text(label,modifier=Modifier.padding(vertical=14.dp),style=MaterialTheme.typography.labelLarge,maxLines=1,softWrap=false)})}}
+            if(!keyboard&&tab!=0&&preview!=0)Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){
+                FilterChip(selected=previewLevel<CharacterRoster.mastery(preview),onClick={select(preview)},label={Text("Starter · Lv. ${Adventure.roles[preview].level}")})
+                FilterChip(selected=previewLevel>=CharacterRoster.mastery(preview),onClick={select(preview,CharacterRoster.mastery(preview))},label={Text("Mastery · Lv. ${CharacterRoster.mastery(preview)}")})
+            }
+            TabRow(selectedTabIndex=tab,containerColor=Bg){listOf("Style","Characters","Journey").forEachIndexed{i,label->Tab(selected=tab==i,onClick={tab=i;select(avatar.role,journey.level)},content={Text(label,modifier=Modifier.padding(vertical=14.dp),style=MaterialTheme.typography.labelLarge,maxLines=1,softWrap=false)})}}
             key(tab){Column(Modifier.weight(1f,false).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(12.dp)){
                 when(tab){
                     0->{
                         OutlinedTextField(name,{save(newName=it.take(24))},label={Text("Your nearby name")},singleLine=true,modifier=Modifier.fillMaxWidth())
-                        if(Adventure.isSpecial(avatar.role)){
+                        if(CharacterRoster.fixed(avatar.role)){
                             Surface(color=Panel,shape=MaterialTheme.shapes.medium){Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(8.dp)){
                                 Text("Signature character · fixed design",fontWeight=FontWeight.SemiBold)
                                 Text("${Adventure.roles[avatar.role].name} has its own head, hair, outfit and colours. Your personal avatar style stays saved.",color=Muted,style=MaterialTheme.typography.bodySmall)
-                                TextButton(onClick={tab=1;preview=0}){Text("Choose a customizable character")}
+                                TextButton(onClick={tab=1;select(0)}){Text("Choose a customizable character")}
                             }}
                         }else{
                         Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween){
@@ -103,18 +121,19 @@ private fun points(value:Long)=NumberFormat.getIntegerInstance().format(value)
                         FlowRow(horizontalArrangement=Arrangement.spacedBy(6.dp)){Adventure.elements.forEachIndexed{i,label->FilterChip(selected=avatar.element==i,onClick={save(avatar.copy(element=i))},label={Text(label)})}}
                         }
                         Row(verticalAlignment=Alignment.CenterVertically){Column(Modifier.weight(1f)){Text("Idle animation",fontWeight=FontWeight.SemiBold);Text("Pauses during transfers and in the background. Respects system motion settings.",color=Muted,style=MaterialTheme.typography.bodySmall)};Switch(checked=animations,onCheckedChange=onAnimations,modifier=Modifier.semantics{contentDescription="Idle animation"})}
+                        Row(verticalAlignment=Alignment.CenterVertically){Column(Modifier.weight(1f)){Text("Auto skills",fontWeight=FontWeight.SemiBold);Text("Play once when previewing an earned character. Locked skills stay manual previews.",color=Muted,style=MaterialTheme.typography.bodySmall)};Switch(checked=preferences.avatarAutoSkills,onCheckedChange={ProfileStore.autoSkills(context,it)},modifier=Modifier.semantics{contentDescription="Auto skills"})}
                     }
                     1->{
                         val next=Adventure.nextRole(journey.level)
                         Text(next?.let{"Next unlock: ${it.name} at Lv. ${it.level}"}?:"All characters unlocked",color=Color(0xFFFFDA89),fontWeight=FontWeight.SemiBold)
                         if(next!=null)Text("${points(Adventure.threshold(next.level)-journey.xp)} XP to go. Tap a character to preview.",color=Muted,style=MaterialTheme.typography.bodySmall)
-                        Adventure.roles.indices.sortedBy{Adventure.roles[it].level}.chunked(2).forEach{row->Row(horizontalArrangement=Arrangement.spacedBy(10.dp)){
+                        CharacterRoster.roles.sortedBy{Adventure.roles[it].level}.chunked(2).forEach{row->Row(horizontalArrangement=Arrangement.spacedBy(10.dp)){
                             row.forEach{i->val role=Adventure.roles[i];val unlocked=Adventure.canEquip(i,journey.level)
-                                Surface(color=if(preview==i)Color(0xFF26344B)else Panel,shape=MaterialTheme.shapes.medium,modifier=Modifier.weight(1f).clickable(onClickLabel="Preview ${role.name}"){preview=i}){
+                                Surface(color=if(preview==i)Color(0xFF26344B)else Panel,shape=MaterialTheme.shapes.medium,modifier=Modifier.weight(1f).clickable(onClickLabel="Preview ${role.name}"){select(i)}){
                                     Column(Modifier.padding(12.dp),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(6.dp)){
                                         ChibiAvatar(previewStyle(i),Modifier.size(86.dp),"${role.name}${if(unlocked)"" else ", locked"}",journey.level,locked=!unlocked,gearLevel=maxOf(journey.level,role.level))
                                         Text(role.name,fontWeight=FontWeight.SemiBold,fontFamily=FontFamily.Monospace,style=MaterialTheme.typography.labelLarge)
-                                        Text(if(Adventure.isSpecial(i))"Fixed signature"else "Customizable",color=Muted,style=MaterialTheme.typography.labelSmall)
+                                        Text(if(CharacterRoster.fixed(i))"Fixed signature"else "Customizable",color=Muted,style=MaterialTheme.typography.labelSmall)
                                         Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(4.dp)){
                                             if(!unlocked)Icon(Icons.Rounded.Lock,null,Modifier.size(12.dp),tint=Muted)
                                             Text(if(i==avatar.role)"Equipped" else if(unlocked)"Unlocked" else "Lv. ${role.level}",color=if(i==avatar.role)Mint else Muted,style=MaterialTheme.typography.labelSmall)
@@ -126,21 +145,18 @@ private fun points(value:Long)=NumberFormat.getIntegerInstance().format(value)
                         Text(Adventure.roles[preview].story,color=Muted,style=MaterialTheme.typography.bodySmall)
                     }
                     2->{
-                        Text("Gear progression",fontWeight=FontWeight.SemiBold)
-                        Text("Start with simple clothes. Armour, auras and wings come later. Colours stay freely selectable.",color=Muted,style=MaterialTheme.typography.bodySmall)
-                        Adventure.gearMilestones.forEach{step->Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)){
-                            val gear=Adventure.gear(step.role,step.level)
-                            ChibiAvatar(avatar.copy(role=step.role),Modifier.size(64.dp),"${gear.title} at level ${step.level}",step.level)
-                            Column(Modifier.weight(1f)){Text(gear.title,fontWeight=FontWeight.SemiBold);Text("Level ${step.level} · ${points(Adventure.threshold(step.level))} total XP",color=Muted,style=MaterialTheme.typography.bodySmall)}
-                            if(journey.level<step.level)Icon(Icons.Rounded.Lock,null,Modifier.size(16.dp),tint=Muted)
-                        }}
-                        HorizontalDivider()
-                        Text("Rank frames",fontWeight=FontWeight.SemiBold)
-                        Adventure.ranks.forEach{rank->Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)){
-                            ChibiAvatar(avatar,Modifier.size(54.dp),"${rank.name} frame",rank.level)
-                            Column(Modifier.weight(1f)){Text(rank.name,color=Color(rank.colour),fontWeight=FontWeight.SemiBold);Text("Level ${rank.level} · ${points(Adventure.threshold(rank.level))} total XP",color=Muted,style=MaterialTheme.typography.bodySmall)}
-                            if(journey.level>=rank.level)Text("✓",color=Mint)
-                        }}
+                        Text("Character journey",fontWeight=FontWeight.SemiBold)
+                        Text("Your personal avatar stays customizable. Earn fixed characters and their mastery outfits by sharing new files.",color=Muted,style=MaterialTheme.typography.bodySmall)
+                        CharacterRoster.roles.filter{CharacterRoster.fixed(it)}.sortedBy{Adventure.roles[it].level}.forEach{role->
+                            Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)){
+                                ChibiAvatar(avatar.copy(role=role),Modifier.size(64.dp),"${Adventure.roles[role].name} journey",journey.level,gearLevel=Adventure.roles[role].level)
+                                Column(Modifier.weight(1f)){
+                                    Text(Adventure.roles[role].name,fontWeight=FontWeight.SemiBold)
+                                    Text("Unlock Lv. ${Adventure.roles[role].level} · Mastery Lv. ${CharacterRoster.mastery(role)}",color=Muted,style=MaterialTheme.typography.bodySmall)
+                                    Row{TextButton(onClick={select(role)}){Text("Starter")};TextButton(onClick={select(role,CharacterRoster.mastery(role))}){Text("Mastery")}}
+                                }
+                            }
+                        }
                         HorizontalDivider()
                         Text("How XP works",fontWeight=FontWeight.SemiBold)
                         Text("New verified content earns 1 XP per complete 256 KB, up to 50 XP per file. Smaller files share normally but earn no XP. Repeats, retries and previews earn nothing. Existing XP and character unlocks stay saved.",color=Muted,style=MaterialTheme.typography.bodySmall)

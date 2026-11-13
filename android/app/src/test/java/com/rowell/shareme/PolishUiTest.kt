@@ -25,6 +25,55 @@ class PolishUiTest {
     @get:Rule val compose=createAndroidComposeRule<MainActivity>()
     private val profile=ShareProfile("12345678-abcd","Rowell",AvatarStyle(4,1,0,0,1))
     @Before fun reset(){compose.runOnIdle{val existingId=ProfileStore.load(compose.activity).id;Model.set{ScreenState(profile=profile.copy(id=existingId),uiVisible=true,avatarAnimations=false)}}}
+    @Test fun collectionAndJourneyReplaceTheRetiredClassAndRankMenus(){
+        compose.onNodeWithContentDescription("Edit your name and avatar").performClick()
+        compose.onNodeWithText("Characters").performClick()
+        for(name in listOf("Rune Mage","Forest Ranger","Shadow Reaper","Demon Warden","Silent Ronin"))compose.onNodeWithText(name).assertDoesNotExist()
+        compose.onNodeWithContentDescription("Luffy-inspired, locked").assertExists()
+        capture("new-mobile-collection")
+        compose.onNodeWithText("Journey").performClick()
+        compose.onNodeWithText("Character journey").assertIsDisplayed()
+        for(name in listOf("Ranks","Gear progression","Rank frames"))compose.onNodeWithText(name).assertDoesNotExist()
+        capture("new-mobile-journey")
+    }
+    @Test fun portraitQualityAndSkillPreferencesAutosaveWithThePersonalLook(){
+        compose.onNodeWithContentDescription("Edit your name and avatar").performClick()
+        compose.onNodeWithText("Pixel").performClick()
+        compose.runOnIdle{assertTrue(ProfileStore.pixels(compose.activity));assertTrue(Model.value.avatarPixels)}
+        compose.onNodeWithText("HD").performClick()
+        compose.onNodeWithContentDescription("Auto skills").performScrollTo().performClick()
+        compose.runOnIdle{assertFalse(ProfileStore.pixels(compose.activity));assertFalse(ProfileStore.autoSkills(compose.activity));assertEquals(0L,Model.value.journey.xp)}
+        compose.onNodeWithText("Done").performClick()
+        compose.onNodeWithContentDescription("Edit your name and avatar").performClick()
+        compose.onNodeWithText("HD").assertExists()
+        compose.runOnIdle{assertFalse(ProfileStore.autoSkills(compose.activity))}
+    }
+    @Test fun lockedZoroMasteryAnimatesInItsCardWithoutEquippingOrAwardingXp(){
+        compose.onNodeWithContentDescription("Edit your name and avatar").performClick()
+        compose.runOnIdle{Model.set{it.copy(avatarAnimations=true,avatarAutoSkills=false)}}
+        compose.onNodeWithText("Characters").performClick()
+        compose.onNodeWithContentDescription("Zoro-inspired, locked").performScrollTo().performClick()
+        compose.onNodeWithText("Use skill").assertDoesNotExist()
+        compose.onNodeWithText("Mastery · Lv. 82").performClick()
+        compose.waitForIdle()
+        compose.mainClock.autoAdvance=false
+        compose.onNodeWithText("Use skill").performClick();compose.mainClock.advanceTimeBy(350)
+        compose.onNodeWithContentDescription("Your adventurer preview. Tap to animate.").assert(SemanticsMatcher.expectValue(androidx.compose.ui.semantics.SemanticsProperties.StateDescription,"Skill playing"))
+        compose.runOnIdle{assertEquals(0L,Model.value.journey.xp);assertEquals(0,Model.value.profile.avatar.role)}
+        capture("new-zoro-mastery-preview")
+        compose.runOnIdle{Model.set{it.copy(avatarAnimations=false)}};compose.mainClock.advanceTimeBy(100)
+        compose.onNodeWithContentDescription("Your adventurer preview. Tap to animate.").assert(SemanticsMatcher.expectValue(androidx.compose.ui.semantics.SemanticsProperties.StateDescription,"Idle"))
+    }
+    @Test fun transferSkillsStayIndependentAndStopWhenTheAppLeavesTheForeground(){
+        compose.runOnIdle{Model.set{it.copy(busy=true,mode="send",profile=it.profile.copy(avatar=AvatarStyle(role=23)),journey=AdventurerJourney(Adventure.threshold(100)),avatarAnimations=true,connection=PeerConnection("Nearby phone",ConnectionPhase.SENDING),current="holiday-photo.jpg",done=10,total=100,peerAppearance=PeerAppearance(AvatarStyle(role=19),88))}}
+        compose.waitForIdle();compose.mainClock.autoAdvance=false
+        val own=compose.onNodeWithContentDescription("You avatar. Tap to animate.");val peer=compose.onNodeWithContentDescription("Nearby phone avatar. Tap to animate.")
+        own.performClick();peer.performClick();compose.mainClock.advanceTimeBy(480)
+        val playing=SemanticsMatcher.expectValue(androidx.compose.ui.semantics.SemanticsProperties.StateDescription,"Skill playing");own.assert(playing);peer.assert(playing)
+        compose.runOnIdle{assertEquals(10L,Model.value.done);assertTrue(Model.value.busy);Model.set{it.copy(uiVisible=false)}}
+        compose.mainClock.advanceTimeBy(100)
+        val idle=SemanticsMatcher.expectValue(androidx.compose.ui.semantics.SemanticsProperties.StateDescription,"Idle");own.assert(idle);peer.assert(idle)
+    }
     @Test fun transferShowsBothAvatarsAboveTheFileListWithoutChangingProgress(){
         compose.runOnIdle{Model.set{it.copy(busy=true,mode="send",connection=PeerConnection("Nearby phone",ConnectionPhase.SENDING),current="holiday-photo.jpg",done=262144,total=1048576,fileIndex=1,fileCount=2,peerAppearance=PeerAppearance(AvatarStyle(role=13),82))}}
         compose.onNodeWithText("holiday-photo.jpg").assertIsDisplayed()
@@ -77,8 +126,8 @@ class PolishUiTest {
         compose.onNodeWithText("Girl").performScrollTo().performClick()
         compose.runOnIdle{assertEquals("Auto saved",ProfileStore.load(compose.activity).name);assertEquals(1,ProfileStore.load(compose.activity).avatar.look)}
         compose.onNodeWithText("Characters").performClick()
-        compose.onNodeWithContentDescription("Rune Mage, locked").performClick()
-        compose.onNodeWithText("Unlocks at Lv. 8").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Luffy-inspired, locked").performScrollTo().performClick()
+        compose.onNodeWithText("Unlocks at Lv. 20").assertIsDisplayed()
         compose.onNodeWithText("Equip character").assertDoesNotExist()
         compose.runOnIdle{assertEquals(0,ProfileStore.load(compose.activity).avatar.role);assertEquals(0L,Model.value.journey.xp)}
         capture("characters-locked")
@@ -94,15 +143,15 @@ class PolishUiTest {
         compose.onNodeWithText("Equip character").performClick()
         compose.runOnIdle{assertEquals(5,ProfileStore.load(compose.activity).avatar.role)}
         capture("seraph-character")
-        compose.onNodeWithText("Ranks").performClick()
-        compose.onNodeWithText("God-tier").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Journey").performClick()
+        compose.onNodeWithText("Character journey").assertIsDisplayed()
         capture("rank-collection")
     }
     @Test @Config(qualifiers="w320dp-h640dp-xhdpi") fun profileDoneAndTabsFitSmallPhone(){
         compose.onNodeWithContentDescription("Edit your name and avatar").performClick()
         compose.onNodeWithText("Done").assertIsDisplayed()
         compose.onNodeWithText("Characters").assertIsDisplayed()
-        compose.onNodeWithText("Ranks").assertIsDisplayed()
+        compose.onNodeWithText("Journey").assertIsDisplayed()
         capture("small-profile")
     }
     @Test fun autosaveUpdatesQrNameWithoutResettingTheListenerOrInterruptedTransfer(){

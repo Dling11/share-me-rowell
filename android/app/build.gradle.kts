@@ -1,11 +1,13 @@
 import java.awt.image.BufferedImage
+import java.security.MessageDigest
+import groovy.json.JsonSlurper
 
 plugins { id("com.android.application"); id("org.jetbrains.kotlin.android"); id("org.jetbrains.kotlin.plugin.compose") }
 android {
     namespace = "com.rowell.shareme"
     compileSdk = 36
     buildToolsVersion = "35.0.0"
-    defaultConfig { applicationId = "com.rowell.shareme"; minSdk = 29; targetSdk = 36; versionCode = 15; versionName = "1.2.7" }
+    defaultConfig { applicationId = "com.rowell.shareme"; minSdk = 29; targetSdk = 36; versionCode = 16; versionName = "1.2.8" }
     signingConfigs {
         create("rowell") {
             storeFile = rootDir.resolve("../.local/signing/shareme.jks")
@@ -34,10 +36,30 @@ dependencies {
     testImplementation("androidx.compose.ui:ui-test-junit4")
 }
 tasks.withType<Test>().configureEach {
-    systemProperty("sharemode.screenshots",rootDir.resolve("../.local/ui-1.2.7").absolutePath)
+    systemProperty("sharemode.screenshots",rootDir.resolve("../.local/ui-1.2.8").absolutePath)
     systemProperty("maven.repo.local",rootDir.resolve("../.local/robolectric-maven").absolutePath)
     systemProperty("robolectric.dependency.repo.url","https://repo.maven.apache.org/maven2")
 }
+
+// A desktop-art change must never silently leave the shipped phone collection behind.
+val verifyPortraitArt by tasks.registering {
+    val assets=file("src/main/assets/avatars")
+    inputs.dir(assets);inputs.dir(rootDir.resolve("../windows/art"))
+    doLast {
+        val manifest=JsonSlurper().parse(assets.resolve("manifest.json")) as Map<*,*>
+        check(manifest["format"]==1&&manifest["cellSize"]==256){"Unsupported mobile portrait format"}
+        val atlases=manifest["atlases"] as List<*>
+        check(atlases.size==28){"Incomplete approved mobile collection"}
+        for(entry in atlases){
+            val atlas=entry as Map<*,*>;val name=atlas["name"] as String;val frames=(atlas["frames"] as Number).toInt()
+            val source=rootDir.resolve("../windows/art/$name.png")
+            val digest=MessageDigest.getInstance("SHA-256").digest(source.readBytes()).joinToString(""){"%02x".format(it)}
+            check(digest==atlas["sourceSha256"]){"Mobile artwork is stale for $name. Run scripts/compile-android-portraits.mjs."}
+            check(assets.resolve(name).listFiles()?.map{it.name}?.toSet()==(0 until frames).map{"$it.webp"}.toSet()){"Missing or obsolete mobile cels for $name"}
+        }
+    }
+}
+tasks.named("preBuild"){dependsOn(verifyPortraitArt)}
 
 // Compile the generated art at its in-game pixel resolution. The high-resolution source stays
 // outside res/, so it cannot bloat the APK; the authored artwork itself is preserved unchanged.

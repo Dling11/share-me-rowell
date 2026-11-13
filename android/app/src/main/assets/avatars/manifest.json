@@ -1,0 +1,148 @@
+{
+  "format": 1,
+  "cellSize": 256,
+  "atlases": [
+    {
+      "name": "portrait_custom_boy",
+      "frames": 24,
+      "sourceSha256": "a87352983554135913514f4b69f5a20e7549c38200a1e1c55248fb9080d7a138"
+    },
+    {
+      "name": "portrait_custom_girl",
+      "frames": 24,
+      "sourceSha256": "7bd48bafc2f140800bf9ca9c88bc2fffbfbeb653f6344fc72e794c76caba2498"
+    },
+    {
+      "name": "portrait_seraph",
+      "frames": 24,
+      "sourceSha256": "70303e6b640806c7dae7fc6b8c2008762f1ed316168b30696db34d99e8c7eded"
+    },
+    {
+      "name": "portrait_sovereign",
+      "frames": 24,
+      "sourceSha256": "d4ae5cf9997d9c4ed9140accc11f07235d47479bb5ffeac8305af4ac42393599"
+    },
+    {
+      "name": "portrait_special",
+      "frames": 24,
+      "sourceSha256": "6f357f597dd1cf3e77c341906d0f40e10f4936ecefb671352bdec7bcf1e4708c"
+    },
+    {
+      "name": "portrait_yugi",
+      "frames": 16,
+      "sourceSha256": "175b521b10979df8c4a81e997c5621b55a6d62e3f676145f6c0477edbb0795fa"
+    },
+    {
+      "name": "portrait_luffy",
+      "frames": 24,
+      "sourceSha256": "c318fa3bc32090e240f7036c8d6dba1d2db057cc043bea8019cd2fb7dbbc7ece"
+    },
+    {
+      "name": "portrait_zoro",
+      "frames": 24,
+      "sourceSha256": "b20eb746db9ecde8cc31c56c70b94131cc1888a6b2a1c8f17498e55c3acbfcf2"
+    },
+    {
+      "name": "portrait_boa",
+      "frames": 24,
+      "sourceSha256": "49559f82e3314be87c3c0d6a687bfe25ec4588590c39889f7e453924443e22a4"
+    },
+    {
+      "name": "portrait_shanks",
+      "frames": 24,
+      "sourceSha256": "cf37389d220dafd90128e809ddb8dfb75eee5ab099edff89d0eebda03d1a921f"
+    },
+    {
+      "name": "portrait_eren",
+      "frames": 24,
+      "sourceSha256": "5df9fc5c1b4f813954e1d4b734c7b0a2ce7660667eebb41b9d8352b110715444"
+    },
+    {
+      "name": "portrait_levi",
+      "frames": 24,
+      "sourceSha256": "7e7dfc606f55aa12c2d5f55280866a3b9a741edfb4e355be0d62c134d85e260b"
+    },
+    {
+      "name": "portrait_mikasa",
+      "frames": 24,
+      "sourceSha256": "d599a2830fe8525da059cd14646681b47a14bf0a8ca4c125d9012c69d546576d"
+    },
+    {
+      "name": "portrait_sukuna",
+      "frames": 24,
+      "sourceSha256": "1a8fa77809fff8e29f7962637967ce312c286538fd5476611e45bcfd718e4e1a"
+    },
+    {
+      "name": "portrait_itachi",
+      "frames": 24,
+      "sourceSha256": "c6a62fb759f30e7b28308a16710f308eabc9c51bd839178139619afd6bdf27ed"
+    },
+    {
+      "name": "portrait_rock_lee",
+      "frames": 24,
+      "sourceSha256": "4eabe614e73cd858d1f3b0a963de33691357c4aded4f504d862b05ee94b0abb4"
+    },
+    {
+      "name": "portrait_might_guy",
+      "frames": 24,
+      "sourceSha256": "88952cc0c6508d49052108c2965aaf9def9f320bbbdbdb045d2df5e33b169378"
+    },
+    {
+      "name": "portrait_madara",
+      "frames": 24,
+      "sourceSha256": "bcc524f676421ad74f313614cd96a9e001ce6662f41be288c82ff41edeb4e5ec"
+    },
+    {
+      "name": "madara_cast",
+      "frames": 24,
+      "sourceSha256": "62420e7b192143c22f1b831f0647e3117d315cad1deaebfe67a97a9f4dcc5ea8"
+    },
+    {
+      "name": "madara_guardian",
+      "frames": 24,
+      "sourceSha256": "3d914f0d35828af10b478a4e758117832635110f1cc93bf79ce3e04d2c9e025b"
+    },
+    {
+      "name": "madara_eye",
+      "frames": 16,
+      "sourceSha256": "4f13110fd1a25825e9f1ba47459abea83c95ca982c8ffff49b80e0b92773217f"
+    },
+    {
+      "name": "sukuna_cast",
+      "frames": 24,
+      "sourceSha256": "bed8e1d7673df71f12766c9bdd59870ed8d026eb627246b0b6349f4b4e8ff744"
+    },
+    {
+      "name": "sukuna_shrine",
+      "frames": 24,
+      "sourceSha256": "33f10ed8580145c65e03bccdaaf1595dea4271765285c0efa323a5e0b0a57bf1"
+    },
+    {
+      "name": "sukuna_eye",
+      "frames": 16,
+      "sourceSha256": "5d8132b0254fcaadfe23adadaa9ea6328ede09fa7206b851d894a081f106869b"
+    },
+    {
+      "name": "zoro_ready",
+      "frames": 24,
+      "sourceSha256": "55b60a379e0b3598b03bc17099f0bfa58078ea9291d4351f63551e78bae382f4"
+    },
+    {
+      "name": "zoro_combo",
+      "frames": 24,
+      "sourceSha256": "a0b32b97a9138899c19315773728ce664e809f217da06b66b29df0df65007a67"
+    },
+    {
+      "name": "zoro_finish",
+      "frames": 24,
+      "sourceSha256": "584a1ad391b3cbdba043e3de1ef2db0d4268865361e03d469630d1340b79a085"
+    },
+    {
+      "name": "zoro_slashes",
+      "frames": 24,
+      "sourceSha256": "cbebfbe515a40685ee3e7c5c63cc26db89e8bf125aee3768c539c8052247a278"
+    }
+  ],
+  "bytes": 16073634,
+  "files": 648
+}
