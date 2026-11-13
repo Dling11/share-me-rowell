@@ -1,4 +1,4 @@
-// Optional build-time tool: sharp 0.34.5. The app consumes only the compiled WebP cels.
+// Optional build-time tool: sharp 0.35.5. The app consumes only the compiled WebP cels.
 import {createRequire} from 'node:module';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
