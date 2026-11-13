@@ -6,14 +6,14 @@ using System.Windows.Forms;
 
 namespace ShareMeRowell {
     public static class Palette {
-        public static readonly Color Page=Color.FromArgb(12,19,30);
-        public static readonly Color Sidebar=Color.FromArgb(15,24,38);
-        public static readonly Color Card=Color.FromArgb(22,34,50);
-        public static readonly Color Raised=Color.FromArgb(29,45,63);
+        public static readonly Color Page=Color.FromArgb(15,18,27);
+        public static readonly Color Sidebar=Color.FromArgb(18,22,32);
+        public static readonly Color Card=Color.FromArgb(24,28,40);
+        public static readonly Color Raised=Color.FromArgb(32,38,52);
         public static readonly Color Mint=Color.FromArgb(112,226,194);
         public static readonly Color Text=Color.FromArgb(245,248,255);
-        public static readonly Color Muted=Color.FromArgb(156,175,195);
-        public static readonly Color Border=Color.FromArgb(39,57,76);
+        public static readonly Color Muted=Color.FromArgb(153,164,185);
+        public static readonly Color Border=Color.FromArgb(47,54,72);
         public static GraphicsPath Round(RectangleF box,float radius) {
             var p=new GraphicsPath();float d=Math.Min(radius*2,Math.Min(box.Width,box.Height));
             p.AddArc(box.X,box.Y,d,d,180,90);p.AddArc(box.Right-d,box.Y,d,d,270,90);
@@ -25,7 +25,7 @@ namespace ShareMeRowell {
         public Color Fill=Palette.Card;
         public bool Dashed;
         public SoftCard(){DoubleBuffered=true;BackColor=Palette.Page;Padding=new Padding(22);}
-        protected override void OnPaintBackground(PaintEventArgs e){e.Graphics.Clear(BackColor);if(Width<4||Height<4)return;e.Graphics.SmoothingMode=SmoothingMode.AntiAlias;using(var path=Palette.Round(new RectangleF(1,1,Width-3,Height-3),22))using(var brush=new SolidBrush(Fill))using(var border=new Pen(Palette.Border,1)){if(Dashed)border.DashStyle=DashStyle.Dash;e.Graphics.FillPath(brush,path);e.Graphics.DrawPath(border,path);}}
+        protected override void OnPaintBackground(PaintEventArgs e){e.Graphics.Clear(BackColor);if(Width<4||Height<4)return;e.Graphics.SmoothingMode=SmoothingMode.AntiAlias;using(var path=Palette.Round(new RectangleF(1,1,Width-3,Height-3),14))using(var brush=new SolidBrush(Fill))using(var border=new Pen(Palette.Border,1)){if(Dashed)border.DashStyle=DashStyle.Dash;e.Graphics.FillPath(brush,path);e.Graphics.DrawPath(border,path);}}
     }
     public sealed class SoftButton:Button {
         public bool Primary,Selected,Ghost;
@@ -40,7 +40,7 @@ namespace ShareMeRowell {
             e.Graphics.Clear(BackColor);
             Color fill=Primary?Palette.Mint:(Selected?Color.FromArgb(30,60,65):(hover?Palette.Raised:Ghost?BackColor:Palette.Card));
             if(!Enabled)fill=Palette.Raised;
-            using(var path=Palette.Round(new RectangleF(1,1,Width-3,Height-3),13))using(var brush=new SolidBrush(fill))using(var pen=new Pen(Primary||Selected||Ghost?fill:Palette.Border,1)){e.Graphics.FillPath(brush,path);e.Graphics.DrawPath(pen,path);}
+            using(var path=Palette.Round(new RectangleF(1,1,Width-3,Height-3),9))using(var brush=new SolidBrush(fill))using(var pen=new Pen(Primary||Selected||Ghost?fill:Palette.Border,1)){e.Graphics.FillPath(brush,path);e.Graphics.DrawPath(pen,path);}
             Color ink=!Enabled?Palette.Muted:Primary?Palette.Page:Selected?Palette.Mint:Palette.Text;
             var textBox=ClientRectangle;
             if(!string.IsNullOrEmpty(Glyph)){
@@ -59,6 +59,9 @@ namespace ShareMeRowell {
             TextRenderer.DrawText(e.Graphics,Text,Font,textBox,ink,(AlignLeft?TextFormatFlags.Left:TextFormatFlags.HorizontalCenter)|TextFormatFlags.VerticalCenter|TextFormatFlags.EndEllipsis|TextFormatFlags.NoPrefix);
             if(Focused&&ShowFocusCues)ControlPaint.DrawFocusRectangle(e.Graphics,new Rectangle(5,5,Width-10,Height-10),ink,fill);
         }
+    }
+    public sealed class CrispQrBox:PictureBox {
+        protected override void OnPaint(PaintEventArgs e){e.Graphics.Clear(Color.White);if(Image==null)return;int modules=Image.Width/8;int unit=Math.Max(1,Math.Min(ClientSize.Width,ClientSize.Height)/Math.Max(1,modules));int extent=modules*unit;e.Graphics.InterpolationMode=InterpolationMode.NearestNeighbor;e.Graphics.PixelOffsetMode=PixelOffsetMode.Half;e.Graphics.DrawImage(Image,new Rectangle((Width-extent)/2,(Height-extent)/2,extent,extent),0,0,Image.Width,Image.Height,GraphicsUnit.Pixel);}
     }
     public sealed class TransferBar:Control {
         private int amount;

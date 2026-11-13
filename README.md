@@ -8,6 +8,8 @@ Android 10+ · Windows 10/11, 64-bit · **1.1.0 preview release**
 
 Android **1.1.0** adds Boy/Girl chibi profiles, nearby receiver selection, installed-app sharing and background-idle cleanup in a roughly 2.59 MB APK. The Windows bundle includes the same new Android installer; Windows application features are unchanged from 1.0.4. Read [what's new](docs/RELEASE-1.1.0.md), [build instructions](docs/BUILD.md) and the [privacy policy](docs/PRIVACY.md). This remains a preview; physical two-phone testing and [Play release preparation](docs/PLAY-RELEASE.md) are separate.
 
+The local **Windows 1.2.13 development candidate** corrects Zoro's **Mastery** skill: black bandana/green robe, Wado's white mouth handle, Enma/Sandai sword cues, 72 body poses and 24 effects. His 2.8-second combo has instant crosscuts and a stronger final diagonal split, with no zoom. Choose **Mastery > Use skill**; Auto follows the existing Level 82 mastery, while Starter stays idle at its Level 28 unlock. Earned progress and sharing remain intact; only production art is bundled. The **Android 1.2.6** APK is unchanged. See [what changed](docs/RELEASE-WINDOWS-1.2.13.md), [animation](assets/zoro-skill-1.2.13.gif) and [actual card](assets/windows-zoro-skill-1.2.13.png). **Public downloads below remain 1.1.0.**
+
 ## Downloads
 
 Download Share Mode 1.1.0:
@@ -31,15 +33,29 @@ Android 1.1.0: Send, the avatar editor and nearby receivers. These are rendered 
 <img src="assets/android-profile.png" alt="Share Mode avatar editor with a name, hairstyles, skin tones, colours and expressions" width="240">
 <img src="assets/android-nearby.png" alt="Share Mode nearby receiver picker with an example name and avatar, plus a QR fallback" width="240">
 
-The Windows application, unchanged from 1.0.4, and selected-file review:
+The current Windows development interface, with Send and Receive:
 
-![Share Mode 1.0.4 on Windows](assets/windows-dark.png)
+![Windows Send screen](assets/windows-send-1.2.7.png)
 
-![Selected files in Share Mode 1.0.4](assets/windows-selection.png)
+![Windows Receive screen](assets/windows-receive-1.2.7.png)
 
 Windows screenshots use example files and an isolated loopback pairing session. Their QR codes do not connect to a real sharing device.
 
 Tap the avatar to edit your nearby name and look. Choose **Boy** or **Girl**, then customize any hair, colours and expression. **Surprise me** keeps your chosen style. Older 1.1.0 peers can still display the basic hair/colours; Android 1.0.4 and Windows connect through QR.
+
+## Avatar development preview
+
+The following is rendered from the earlier 1.2.3 pixel avatar code with sample colours and levels. These are cosmetic unlocks; sharing features remain available at every level.
+
+<img src="assets/android-adventurer-gallery.png" alt="Seven Share Mode RPG classes in Boy and Girl looks, beginning with the novice Courier" width="600">
+<img src="assets/android-character-collection.png" alt="Share Mode character collection showing a locked Rune Mage preview and its level 8 unlock" width="260">
+
+[See the level 1 to 100 gear roadmap](assets/android-gear-progression.png) and [the actual novice/endgame idle comparison](assets/android-pixel-idle.gif). [Artwork sources and generation prompts](android/art/README.md).
+
+The Windows candidate uses the same artwork and earned progression in a desktop layout. These are rendered previews with an example profile:
+
+<img src="assets/windows-studio-style-1.2.8.png" alt="Windows appearance editor with saved style and XP" width="640">
+<img src="assets/windows-studio-journey-1.2.7.png" alt="Windows character journey and mastery unlocks" width="640">
 
 ## Phone → phone
 

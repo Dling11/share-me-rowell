@@ -89,9 +89,10 @@ class Transport(private val context:Context) : Closeable {
             synchronized(guard){if(claimed){Wire.write(output,reject("This device is busy."));return};claimed=true;owner=true}
             socket.soTimeout=600000
             val peer=profileName(request.optString("name","Nearby device"))
-            val avatar=if(nearby)runCatching{NearbyProtocol.parseAvatar(request.optString("avatar"),if(request.has("look"))request.optString("look") else null)}.getOrNull() else null
+            val avatar=if(nearby)runCatching{NearbyProtocol.parseAvatar(request.optString("avatar"),request.optional("look"),request.optional("role"),request.optional("element"),request.optional("hairTone"),request.optional("hero"),request.optional("mood"),request.optional("guest"),request.optional("collect"))}.getOrNull() else null
+            val peerLevel=if(nearby)runCatching{NearbyProtocol.parseLevel(request.optional("level"))}.getOrDefault(1)else 1
             val comparison=if(nearby)NearbyProtocol.transferCode(pair.fingerprint,request.optString("nonce")) else ""
-            state{it.copy(connection=PeerConnection.begin(peer,ConnectionPhase.APPROVAL),current="",currentUri="",done=0,total=0)}
+            state{it.copy(connection=PeerConnection.begin(peer,ConnectionPhase.APPROVAL),current="",currentUri="",done=0,total=0,earnedXp=0)}
             if(nearby){
                 // Bind human verification to this TLS certificate AND this client's fresh nonce.
                 // No selected filenames are disclosed until the sender confirms this code.
@@ -105,7 +106,7 @@ class Transport(private val context:Context) : Closeable {
             val op=request.optString("op")
             if(op=="push"&&pair.mode=="receive"){
                 val files=Wire.files(request)
-                if(!approve(peer,files,false,comparison,avatar)){
+                if(!approve(peer,files,false,comparison,avatar,peerLevel)){
                     if(nearby)nextNearbyRequestAt=System.nanoTime()+TimeUnit.SECONDS.toNanos(15)
                     phase(ConnectionPhase.DECLINED);status("Transfer declined.");Wire.write(output,reject("Transfer declined."));return
                 }
@@ -150,10 +151,10 @@ class Transport(private val context:Context) : Closeable {
                         val nonce=hex(ByteArray(16).also{SecureRandom().nextBytes(it)})
                         val comparison=NearbyProtocol.transferCode(pair.fingerprint,nonce)
                         val avatar=Model.value.profile.avatar
-                        Wire.write(output,JSONObject().put("v",1).put("op","nearby").put("nonce",nonce).put("name",Model.deviceName).put("avatar",avatar.legacyEncode()).apply{if(avatar.look!=0)put("look",avatar.look)})
+                        Wire.write(output,JSONObject().put("v",1).put("op","nearby").put("nonce",nonce).put("name",Model.deviceName).put("avatar",avatar.legacyEncode()).apply{NearbyProtocol.cosmetics(avatar,Model.value.journey.level).forEach{(key,value)->put(key,value)}})
                         val ready=Wire.read(input);Wire.success(ready);require(ready.optString("stage")=="nearby"){"This receiver needs a newer version of Share Mode. Use QR instead."}
                         state{it.copy(verificationCode=comparison)}
-                        if(!approve(pair.name,files.map{it.meta},true,comparison,nearbyPeer.avatar)){
+                        if(!approve(pair.name,files.map{it.meta},true,comparison,nearbyPeer.avatar,nearbyPeer.level)){
                             phase(ConnectionPhase.DECLINED);status("Request cancelled. Nothing sent.");return@execute
                         }
                         phase(ConnectionPhase.WAITING)
@@ -172,8 +173,8 @@ class Transport(private val context:Context) : Closeable {
             finally{socket?.let{connections.remove(it);runCatching{it.close()}};rawClient?.let{connections.remove(it);runCatching{it.close()}};synchronized(guard){claimed=false};state{it.copy(busy=false,approval=null)}}
         }}catch(_:java.util.concurrent.RejectedExecutionException){synchronized(guard){claimed=false}}
     }
-    private fun approve(peer:String,files:List<FileMeta>,sending:Boolean,deviceCode:String="",avatar:AvatarStyle?=null):Boolean {
-        val approval=Approval(peer,files,sending,deviceCode=deviceCode,avatar=avatar)
+    private fun approve(peer:String,files:List<FileMeta>,sending:Boolean,deviceCode:String="",avatar:AvatarStyle?=null,level:Int=1):Boolean {
+        val approval=Approval(peer,files,sending,deviceCode=deviceCode,avatar=avatar,level=level)
         state{it.copy(approval=approval,busy=true,status="Waiting for your approval…",connection=it.connection.advance(ConnectionPhase.APPROVAL))}
         return try{approval.answer.get(90,TimeUnit.SECONDS)}finally{state{it.copy(approval=null)}}
     }
@@ -181,21 +182,21 @@ class Transport(private val context:Context) : Closeable {
         require(offsets.length()==files.size)
         files.forEachIndexed{index,source->
             val offset=offsets.getLong(index);require(offset in 0..source.meta.size)
-            state{it.copy(busy=true,current=source.meta.name,currentUri=source.uri.toString(),status="Sending file ${index+1} of ${files.size}…",done=offset,total=source.meta.size,fileIndex=index+1,fileCount=files.size,connection=it.connection.advance(ConnectionPhase.SENDING))}
+            state{it.copy(busy=true,current=source.meta.name,currentUri=source.uri.toString(),status="Sending file ${index+1} of ${files.size}…",done=offset,total=source.meta.size,fileIndex=index+1,fileCount=files.size,resumedFrom=offset,connection=it.connection.advance(ConnectionPhase.SENDING))}
             var updated=0L
             source.open(context,offset).use{Wire.copy(it,output,source.meta.size-offset){done->if(System.currentTimeMillis()-updated>120||offset+done==source.meta.size){updated=System.currentTimeMillis();state{s->s.copy(done=offset+done)}}}}
             status("Waiting for file verification…")
             phase(ConnectionPhase.VERIFYING)
-            Wire.success(Wire.read(input));store.addHistory("Sent",source.meta.name,source.meta.size,source.uri.toString())
+            Wire.success(Wire.read(input));JourneyStore.award(context,source.meta);store.addHistory("Sent",source.meta.name,source.meta.size,source.uri.toString())
         }
         phase(ConnectionPhase.FINISHED);status("Transfer complete. Files verified.")
     }
     private fun receive(input:InputStream,output:OutputStream,files:List<FileMeta>){
         val used=mutableSetOf<String>()
-        val offsets=files.map{if(used.add(it.sha+it.size))store.offset(it) else 0L}
+        val offsets=files.map{store.offset(it,used.add(it.sha+it.size))}
         Wire.write(output,JSONObject().put("ok",true).put("offsets",JSONArray(offsets)))
         files.forEachIndexed{index,file->
-            state{it.copy(busy=true,current=file.name,currentUri="",status="Receiving file ${index+1} of ${files.size}…",done=offsets[index],total=file.size,fileIndex=index+1,fileCount=files.size,connection=it.connection.advance(ConnectionPhase.RECEIVING))}
+            state{it.copy(busy=true,current=file.name,currentUri="",status="Receiving file ${index+1} of ${files.size}…",done=offsets[index],total=file.size,fileIndex=index+1,fileCount=files.size,resumedFrom=offsets[index],connection=it.connection.advance(ConnectionPhase.RECEIVING))}
             var updated=0L
             try {store.receive(file,offsets[index],input,{phase(ConnectionPhase.VERIFYING);status("Verifying ${file.name}…")},checkCancelled={check(!stopped){"Disconnected."}}){done->if(System.currentTimeMillis()-updated>120||done==file.size){updated=System.currentTimeMillis();state{it.copy(done=done)}}};Wire.write(output,JSONObject().put("ok",true).put("index",index))}
             catch(e:Exception){runCatching{Wire.write(output,reject(e.message?:"The file could not be received."))};throw e}
@@ -205,3 +206,5 @@ class Transport(private val context:Context) : Closeable {
     private fun reject(message:String)=JSONObject().put("ok",false).put("error",message)
     override fun close(){synchronized(guard){stopped=true;listener?.close()};Model.value.approval?.answer?.complete(false);synchronized(connections){connections.toList().forEach{runCatching{it.close()}};connections.clear()};executor.shutdownNow()}
 }
+
+private fun JSONObject.optional(key:String):String?=if(has(key))optString(key)else null

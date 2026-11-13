@@ -1,0 +1,9 @@
+# Share Mode 1.1.1 candidate
+
+- Share a file from Android Files, a gallery or another app using its Share menu, then choose Share Mode. Single files and multiple selections open on Send for review. If a selection is already present, choose Add files or Replace selection. An active transfer finishes or is cancelled before new shared files are prepared.
+- The Send apps button opens installed-app selection from both an empty and an existing file selection. APK parts are included automatically; app accounts, saves and private data stay on the source phone.
+- Interrupted transfers offer Retry / resume, with the resumed offset shown in progress. Android 1.1.1 receivers also reuse completed files when the same retained batch is retried. Older receivers, including Windows 1.0.4, retain their existing partial-file resume behavior. Receiver approval and complete file verification still apply. After closing the app, you may need to select your source files again; retry is user initiated.
+
+This local candidate retains the Android package, signing identity, QR protocol and download folder. Public downloads remain 1.1.0 until a separate publication. The existing Windows application remains 1.0.4 with its compatible QR flow.
+
+Validation: 60 local Android tests pass, release lint has no errors and APK/AAB signing matches existing releases. The owner confirmed Files → Share → Share Mode and installed-app selection on an Android 15 phone updated in place. Native API 36 tests also cover external URI grants, multiple-file sharing into a running app, installed-APK export and exact file hashes at a Windows peer. An intentionally interrupted Android receive batch resumed at 32 KB, reused its completed first file without a duplicate, and passed final hashes for both files. This is not a two-physical-phone resume test.

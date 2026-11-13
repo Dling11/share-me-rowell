@@ -29,6 +29,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextOverflow
@@ -49,12 +50,22 @@ import java.util.Date
 class QrActivity: CaptureActivity()
 class MainActivity: ComponentActivity() {
     private var bundleToInstall by mutableStateOf<History?>(null)
+    private var sharedFiles by mutableStateOf<List<Uri>>(emptyList())
     override fun onResume(){super.onResume();Model.set{it.copy(uiVisible=true)}}
     override fun onPause(){Model.set{it.copy(uiVisible=false)};super.onPause()}
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        sharedFiles=savedInstanceState?.getStringArrayList("incoming-files")?.map(Uri::parse).orEmpty()
+        if(savedInstanceState==null)readShare(intent)
         enableEdgeToEdge(statusBarStyle=SystemBarStyle.dark(Bg.toArgb()), navigationBarStyle=SystemBarStyle.dark(Bg.toArgb()))
         setContent { ShareTheme { AppScreen() } }
+    }
+    public override fun onNewIntent(intent:Intent){super.onNewIntent(intent);readShare(intent)}
+    override fun onSaveInstanceState(outState:Bundle){outState.putStringArrayList("incoming-files",ArrayList(sharedFiles.map(Uri::toString)));super.onSaveInstanceState(outState)}
+    private fun readShare(intent:Intent){
+        if(intent.action !in setOf(Intent.ACTION_SEND,Intent.ACTION_SEND_MULTIPLE))return
+        runCatching{IncomingShare.files(intent)}.onSuccess{sharedFiles=it}.onFailure{toast(it.message?:"Couldn't read the shared files.")}
+        // Forward read grants to the service; savedInstanceState prevents duplicate imports.
     }
     private fun start(action:String, extra:(Intent)->Unit={}) = runCatching {
         TransferService.command(this,action,extra)
@@ -81,7 +92,7 @@ class MainActivity: ComponentActivity() {
         var chooseApp by remember { mutableStateOf(false) }
         var installing by remember { mutableStateOf(false) }
         var privacy by remember { mutableStateOf(false) }
-        LaunchedEffect(page){Model.set{it.copy(uiPage=page)}}
+        LaunchedEffect(page,editProfile){Model.set{it.copy(uiPage=if(editProfile)"profile" else page)}}
         val permissions=rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { granted ->
             val wifi=if(Build.VERSION.SDK_INT>=33)Manifest.permission.NEARBY_WIFI_DEVICES else Manifest.permission.ACCESS_FINE_LOCATION
             val pairing=scanned; val mode=pendingHotspot; scanned=""; pendingHotspot=""
@@ -101,6 +112,19 @@ class MainActivity: ComponentActivity() {
         val scan=rememberLauncherForActivityResult(ScanContract()) { result -> result.contents?.let(::connect) }
         val notify=rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
         fun begin(action:String) { if(Build.VERSION.SDK_INT>=33)notify.launch(Manifest.permission.POST_NOTIFICATIONS); start(action) }
+        fun acceptShared(replace:Boolean=false){
+            val files=sharedFiles
+            if(files.isEmpty())return
+            page="send";chooseReceiver=false;chooseApp=false;appTools=false;paste=false
+            if(Build.VERSION.SDK_INT>=33)notify.launch(Manifest.permission.POST_NOTIFICATIONS)
+            if(start("prepare"){IncomingShare.attach(it,files,replace)}.isSuccess)sharedFiles=emptyList()
+        }
+        LaunchedEffect(sharedFiles,state.busy){if(sharedFiles.isNotEmpty()&&!state.busy&&state.files.isEmpty())acceptShared()}
+        fun resumeTransfer(){
+            if(state.mode!="receive"&&state.files.isNotEmpty()){
+                page="send";if(!state.active)begin("browse");chooseReceiver=true
+            }else{page="receive";begin("receive")}
+        }
         val pick=rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
             if(uris.isNotEmpty()) {
                 if((state.files.map{it.uri}+uris).distinct().size>16)Model.update(status="Choose up to 16 files per batch.")
@@ -116,8 +140,8 @@ class MainActivity: ComponentActivity() {
 
         Scaffold(containerColor=Bg, topBar={
             Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal=20.dp,vertical=10.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(10.dp)) {
-                IconButton(onClick={editProfile=true},enabled=!state.busy){ChibiAvatar(state.profile.avatar,Modifier.size(44.dp),"Edit your name and avatar")}
-                Column(Modifier.weight(1f)) { Text("Share Mode",style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold,maxLines=1,overflow=TextOverflow.Ellipsis); Text("Nearby. No internet needed.",color=Muted,style=MaterialTheme.typography.labelSmall,maxLines=1,overflow=TextOverflow.Ellipsis) }
+                IconButton(onClick={editProfile=true},enabled=!state.busy){ChibiAvatar(state.profile.avatar,Modifier.size(44.dp),"Edit your name and avatar",level=state.journey.level,animated=state.uiVisible&&!state.busy&&state.avatarAnimations&&!editProfile)}
+                Column(Modifier.weight(1f)) { Text("Share Mode",style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold,maxLines=1,overflow=TextOverflow.Ellipsis); Text("Lv. ${state.journey.level} ${state.journey.rank.name} · Local & offline",color=Muted,style=MaterialTheme.typography.labelSmall,maxLines=1,overflow=TextOverflow.Ellipsis) }
                 Box {
                     IconButton(onClick={menu=true}) { Icon(Icons.Rounded.MoreVert,"More options") }
                     DropdownMenu(expanded=menu,onDismissRequest={menu=false}) {
@@ -136,7 +160,7 @@ class MainActivity: ComponentActivity() {
             Column {
                 if(page=="send"&&state.files.isNotEmpty()&&!state.busy)Surface(color=Panel) {
                     Column(Modifier.fillMaxWidth().padding(16.dp,10.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
-                        Button(onClick={if(!state.active)begin("browse");chooseReceiver=true},modifier=Modifier.fillMaxWidth().heightIn(min=52.dp)) { Icon(Icons.AutoMirrored.Rounded.Send,null,Modifier.size(20.dp)); Spacer(Modifier.width(8.dp)); Text(if(state.nearbyPeers.isEmpty())"Choose receiver" else "Choose receiver · ${state.nearbyPeers.size} nearby") }
+                        Button(shape=PixelCorners,onClick={if(!state.active)begin("browse");chooseReceiver=true},modifier=Modifier.fillMaxWidth().heightIn(min=52.dp)) { Icon(Icons.AutoMirrored.Rounded.Send,null,Modifier.size(20.dp)); Spacer(Modifier.width(8.dp)); Text(if(state.nearbyPeers.isEmpty())"Choose receiver" else "Choose receiver · ${state.nearbyPeers.size} nearby") }
                         TextButton(onClick={scanCode()},modifier=Modifier.align(Alignment.CenterHorizontally)){Icon(Icons.Rounded.QrCodeScanner,null,Modifier.size(18.dp));Spacer(Modifier.width(6.dp));Text("Scan QR instead · phone or PC")}
                     }
                 }
@@ -148,6 +172,7 @@ class MainActivity: ComponentActivity() {
             }
         }) { insets ->
             Column(Modifier.fillMaxSize().padding(insets)) {
+                if(sharedFiles.isNotEmpty()&&state.busy)Surface(color=Panel){Row(Modifier.fillMaxWidth().padding(16.dp),verticalAlignment=Alignment.CenterVertically){Text("Shared files are waiting. Finish or cancel this transfer first.",modifier=Modifier.weight(1f),style=MaterialTheme.typography.bodySmall);TextButton(onClick={sharedFiles=emptyList()}){Text("Dismiss")}}}
                 // Keep the active file and progress above the scrolling list on every tab.
                 if(state.busy)TransferBanner(state,onCancel={if(state.preparing)start("cancel_preparation") else if(state.connection.phase.active)disconnect=true else stop=true})
                 key(page) {
@@ -156,8 +181,17 @@ class MainActivity: ComponentActivity() {
                             CardBox {
                                 Text(if(state.connection.phase==ConnectionPhase.FINISHED)"Transfer complete" else state.connection.phase.label,fontWeight=FontWeight.Bold,color=if(state.connection.phase==ConnectionPhase.FINISHED)Mint else MaterialTheme.colorScheme.onSurface)
                                 Text(state.status,color=Muted,style=MaterialTheme.typography.bodyMedium)
+                                if(state.connection.phase==ConnectionPhase.FINISHED&&state.earnedXp>0)Text("+${state.earnedXp} XP · Lv. ${state.journey.level} ${state.journey.rank.name}",color=Color(state.journey.rank.colour),style=MaterialTheme.typography.labelLarge)
+                                if(state.connection.phase==ConnectionPhase.FINISHED&&state.earnedXp>0){
+                                    val unlocked=Adventure.roles.filter{Adventure.threshold(it.level)>state.journey.xp-state.earnedXp && Adventure.threshold(it.level)<=state.journey.xp}
+                                    if(unlocked.isNotEmpty())TextButton(onClick={editProfile=true}){Text("Unlocked: "+unlocked.joinToString{it.name})}
+                                }
                                 if(state.connection.phase==ConnectionPhase.FINISHED)TextButton(onClick={page="history"}){Text("View recent files")}
-                                else TextButton(onClick={scanCode()}){Text("Scan a fresh code")}
+                                else {
+                                    Text("Choose the same files and receiver. Saved partials resume; finished files in this batch stay saved.",color=Muted,style=MaterialTheme.typography.bodySmall)
+                                    Button(shape=PixelCorners,onClick={resumeTransfer()}){Text(if(state.connection.phase==ConnectionPhase.DECLINED)"Try again" else "Retry / resume")}
+                                    TextButton(onClick={scanCode()}){Text("Scan a fresh code")}
+                                }
                             }
                         } else if(!state.busy&&state.status!="Ready to share"&&state.pairing==null&&(!state.status.startsWith("Files ready")||page!="send"))item {
                             Text(state.status,color=Muted,style=MaterialTheme.typography.bodyMedium)
@@ -175,8 +209,8 @@ class MainActivity: ComponentActivity() {
                                         Icon(Icons.Rounded.FolderOpen,null,Modifier.size(36.dp),tint=Mint)
                                         Text("What would you like to send?",style=MaterialTheme.typography.titleMedium,fontWeight=FontWeight.Bold)
                                         Text("Photos, videos and any other files. Select up to 16 at once.",color=Muted)
-                                        Button(onClick={pick.launch(arrayOf("*/*"))},enabled=!state.busy,modifier=Modifier.fillMaxWidth().heightIn(min=52.dp)){Icon(Icons.Rounded.Add,null);Spacer(Modifier.width(8.dp));Text("Choose files")}
-                                        OutlinedButton(onClick={chooseApp=true},enabled=!state.busy,modifier=Modifier.fillMaxWidth().heightIn(min=48.dp)){Icon(Icons.Rounded.Android,null);Spacer(Modifier.width(8.dp));Text("Choose installed app")}
+                                        Button(shape=PixelCorners,onClick={pick.launch(arrayOf("*/*"))},enabled=!state.busy,modifier=Modifier.fillMaxWidth().heightIn(min=52.dp)){Icon(Icons.Rounded.Add,null);Spacer(Modifier.width(8.dp));Text("Choose files")}
+                                        OutlinedButton(shape=PixelCorners,onClick={chooseApp=true},enabled=!state.busy,modifier=Modifier.fillMaxWidth().heightIn(min=48.dp)){Icon(Icons.Rounded.Android,null);Spacer(Modifier.width(8.dp));Text("Send apps")}
                                     }
                                 } else {
                                     item {
@@ -188,16 +222,17 @@ class MainActivity: ComponentActivity() {
                                     items(state.files,key={it.meta.id}) { file ->
                                         FileRow(file.meta.name,file.meta.size,file.uri,onOpen={detail=file},onRemove=if(state.busy)null else ({start("remove_file"){it.putExtra("id",file.meta.id)}}))
                                     }
-                                    item { OutlinedButton(onClick={pick.launch(arrayOf("*/*"))},enabled=!state.busy,modifier=Modifier.fillMaxWidth()) { Icon(Icons.Rounded.Add,null);Spacer(Modifier.width(8.dp));Text("Add more files") } }
-                                    item { TextButton(onClick={chooseApp=true},enabled=!state.busy,modifier=Modifier.fillMaxWidth()){Icon(Icons.Rounded.Android,null,Modifier.size(20.dp));Spacer(Modifier.width(8.dp));Text("Add an installed app")} }
+                                    item { OutlinedButton(shape=PixelCorners,onClick={pick.launch(arrayOf("*/*"))},enabled=!state.busy,modifier=Modifier.fillMaxWidth()) { Icon(Icons.Rounded.Add,null);Spacer(Modifier.width(8.dp));Text("Add more files") } }
+                                    item { OutlinedButton(shape=PixelCorners,onClick={chooseApp=true},enabled=!state.busy,modifier=Modifier.fillMaxWidth()){Icon(Icons.Rounded.Android,null,Modifier.size(20.dp));Spacer(Modifier.width(8.dp));Text("Send apps")} }
                                     item { Text("Choose a receiver when you're ready. They approve before anything sends.",color=Muted,style=MaterialTheme.typography.bodySmall) }
                                 }
+                                if(state.files.isEmpty()&&!state.busy)item{JourneyCard(state){editProfile=true}}
                                 item { TextButton(onClick={options=!options},enabled=!state.busy,modifier=Modifier.fillMaxWidth()){Text(if(options)"Hide connection options" else "More connection options");Icon(if(options)Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,null)} }
                                 if(options)item {
                                     CardBox {
                                         Text("Let the other phone scan",fontWeight=FontWeight.SemiBold)
                                         Text("Useful when the receiving phone will scan your code.",color=Muted,style=MaterialTheme.typography.bodySmall)
-                                        OutlinedButton(onClick={begin("send")},enabled=state.files.isNotEmpty()&&!state.busy,modifier=Modifier.fillMaxWidth()){Text("Show sender code")}
+                                        OutlinedButton(shape=PixelCorners,onClick={begin("send")},enabled=state.files.isNotEmpty()&&!state.busy,modifier=Modifier.fillMaxWidth()){Text("Show sender code")}
                                         if(state.pairing?.mode=="send")QrCard(state.pairing!!.text(),"Other phone: Receive → Scan sender code.")
                                         HotspotControls(state,enabled=state.files.isNotEmpty()&&!state.busy,onStart={hotspot()})
                                         if(state.files.isNotEmpty())TextButton(onClick={shareUris(state.files.map{it.uri})},enabled=!state.busy){Text("Android sharing · Bluetooth optional")}
@@ -211,7 +246,7 @@ class MainActivity: ComponentActivity() {
                                         CardBox {
                                             if(state.pairing?.mode=="receive") {
                                                 Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)){
-                                                    ChibiAvatar(state.profile.avatar,Modifier.size(56.dp))
+                                                    ChibiAvatar(state.profile.avatar,Modifier.size(56.dp),level=state.journey.level)
                                                     Column(Modifier.weight(1f)){Text(state.profile.name,style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold);Text(if(state.nearbyVisible)"Visible to nearby senders" else "QR ready",color=Mint,style=MaterialTheme.typography.bodySmall)}
                                                 }
                                                 QrCard(state.pairing!!.text(),"Scan from Send on the other phone.",maxSize=(LocalConfiguration.current.screenHeightDp*.34f).dp.coerceIn(168.dp,280.dp))
@@ -219,12 +254,12 @@ class MainActivity: ComponentActivity() {
                                             } else {
                                                 Text("Ready when you are",fontWeight=FontWeight.Bold)
                                                 Text("Connect to the same Wi-Fi, or create an offline hotspot.",color=Muted)
-                                                Button(onClick={begin("receive")},modifier=Modifier.fillMaxWidth()){Text("Show my receiver code")}
+                                                Button(shape=PixelCorners,onClick={begin("receive")},modifier=Modifier.fillMaxWidth()){Text("Show my receiver code")}
                                             }
                                         }
                                     }
                                     item { HotspotControls(state,enabled=true,onStart={hotspot()}) }
-                                    item { OutlinedButton(onClick={scanCode()},modifier=Modifier.fillMaxWidth().heightIn(min=48.dp)){Icon(Icons.Rounded.QrCodeScanner,null,Modifier.size(20.dp));Spacer(Modifier.width(8.dp));Text("Scan sender code · phone or PC")} }
+                                    item { OutlinedButton(shape=PixelCorners,onClick={scanCode()},modifier=Modifier.fillMaxWidth().heightIn(min=48.dp)){Icon(Icons.Rounded.QrCodeScanner,null,Modifier.size(20.dp));Spacer(Modifier.width(8.dp));Text("Scan sender code · phone or PC")} }
                                     item { Text("For PC → phone: open Send files on Windows, then scan its code here. Received files go to Downloads/SHARE-ME-ROWELL.",color=Muted,style=MaterialTheme.typography.bodySmall) }
                                     item { TextButton(onClick={runCatching{startActivity(Intent(DownloadManager.ACTION_VIEW_DOWNLOADS))}}){Text("Open Downloads")} }
                                 }
@@ -253,7 +288,7 @@ class MainActivity: ComponentActivity() {
             AlertDialog(onDismissRequest={request.answer.complete(false)},title={Text(if(request.sending)"Send these files?" else "Receive these files?")},text={
                 Column(Modifier.heightIn(max=360.dp).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(12.dp)) {
                     Text(if(request.sending)"To ${request.name}" else "From ${request.name}",fontWeight=FontWeight.Bold)
-                    request.avatar?.let{ChibiAvatar(it,Modifier.size(64.dp).align(Alignment.CenterHorizontally))}
+                    request.avatar?.let{ChibiAvatar(it,Modifier.size(64.dp).align(Alignment.CenterHorizontally),level=request.level)}
                     if(request.deviceCode.isNotEmpty()){
                         Text(request.deviceCode,color=Mint,style=MaterialTheme.typography.titleMedium,fontWeight=FontWeight.Bold)
                         Row(verticalAlignment=Alignment.CenterVertically){Checkbox(checked,{checked=it});Text(if(request.sending)"This code matches the receiving phone." else "This code matches the sending phone.",style=MaterialTheme.typography.bodyMedium)}
@@ -263,7 +298,7 @@ class MainActivity: ComponentActivity() {
                 }
             },confirmButton={TextButton(onClick={request.answer.complete(true)},enabled=request.deviceCode.isEmpty()||checked){Text(if(request.sending)"Send" else "Receive")}},dismissButton={TextButton(onClick={request.answer.complete(false)}){Text("Decline")}})
         }
-        if(editProfile)ProfileSheet(state.profile,onDismiss={editProfile=false},onSave={ProfileStore.save(this,it);editProfile=false;if(state.pairing!=null&&!state.busy)begin(state.pairing!!.mode)})
+        if(editProfile)ProfileSheet(state.profile,onDismiss={editProfile=false},onSave={ProfileStore.save(this,it)},journey=state.journey,animations=state.avatarAnimations&&state.uiVisible&&!state.busy,onAnimations={ProfileStore.animations(this,it)})
         if(privacy)ModalBottomSheet(onDismissRequest={privacy=false},containerColor=Bg,sheetState=rememberModalBottomSheetState(skipPartiallyExpanded=true)){
             val policy=remember{resources.openRawResource(R.raw.privacy).bufferedReader().use{it.readText()}}
             Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(24.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){
@@ -274,6 +309,12 @@ class MainActivity: ComponentActivity() {
             }
         }
         if(chooseApp)InstalledAppsSheet(onDismiss={chooseApp=false},onChoose={app->chooseApp=false;if(Build.VERSION.SDK_INT>=33)notify.launch(Manifest.permission.POST_NOTIFICATIONS);start("prepare_app"){it.putExtra("package",app.packageName)}})
+        if(sharedFiles.isNotEmpty()&&!state.busy&&state.files.isNotEmpty())AlertDialog(
+            onDismissRequest={sharedFiles=emptyList()},title={Text("Add shared files?")},
+            text={Text("${sharedFiles.size} shared · ${state.files.size} already selected. Review your selection before choosing a receiver.")},
+            confirmButton={Column{TextButton(enabled=(state.files.map{it.uri}+sharedFiles).distinct().size<=16,onClick={acceptShared()}){Text("Add files")};TextButton(onClick={acceptShared(true)}){Text("Replace selection")}}},
+            dismissButton={TextButton(onClick={sharedFiles=emptyList()}){Text("Cancel")}}
+        )
         bundleToInstall?.let{item->
             AlertDialog(onDismissRequest={if(!installing)bundleToInstall=null},title={Text("Install this app bundle?")},text={Column(verticalArrangement=Arrangement.spacedBy(12.dp)){
                 Text(item.name);Text("Only install apps from people you trust. Android will check the APK parts and ask you to approve installation. Device-specific apps may need the store instead.",color=Muted)
@@ -291,14 +332,14 @@ class MainActivity: ComponentActivity() {
                 state.nearbyPeers.forEach{peer->
                     Surface(color=Panel,shape=MaterialTheme.shapes.medium,modifier=Modifier.fillMaxWidth()){
                         Row(Modifier.clickable(enabled=!state.busy){chooseReceiver=false;start("connect_nearby"){it.putExtra("id",peer.id);it.putExtra("fingerprint",peer.fingerprint)}}.padding(12.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)){
-                            ChibiAvatar(peer.avatar,Modifier.size(64.dp),"${peer.name}'s avatar")
-                            Column(Modifier.weight(1f)){Text(peer.name,fontWeight=FontWeight.SemiBold);Text("Ready to receive",color=Mint,style=MaterialTheme.typography.bodySmall)}
+                            ChibiAvatar(peer.avatar,Modifier.size(64.dp),"${peer.name}'s avatar",level=peer.level)
+                            Column(Modifier.weight(1f)){Text(peer.name,fontWeight=FontWeight.SemiBold);Text("Lv. ${peer.level} ${Adventure.rank(peer.level).name} · Ready",color=Mint,style=MaterialTheme.typography.bodySmall)}
                             Icon(Icons.AutoMirrored.Rounded.Send,"Send to ${peer.name}",tint=Mint,modifier=Modifier.size(20.dp))
                         }
                     }
                 }
                 if(state.nearbyPeers.isEmpty())Row(horizontalArrangement=Arrangement.spacedBy(12.dp),verticalAlignment=Alignment.CenterVertically){CircularProgressIndicator(Modifier.size(20.dp),strokeWidth=2.dp);Text(state.nearbyStatus,color=Muted,style=MaterialTheme.typography.bodyMedium)}
-                OutlinedButton(onClick={chooseReceiver=false;scanCode()},modifier=Modifier.fillMaxWidth().heightIn(min=48.dp)){Icon(Icons.Rounded.QrCodeScanner,null);Spacer(Modifier.width(8.dp));Text("Scan QR · phone or PC")}
+                OutlinedButton(shape=PixelCorners,onClick={chooseReceiver=false;scanCode()},modifier=Modifier.fillMaxWidth().heightIn(min=48.dp)){Icon(Icons.Rounded.QrCodeScanner,null);Spacer(Modifier.width(8.dp));Text("Scan QR · phone or PC")}
                 Spacer(Modifier.height(16.dp))
             }
         }
@@ -309,13 +350,13 @@ class MainActivity: ComponentActivity() {
                 Text("Share Mode installer",style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold)
                 Text("Help another phone install Share Mode.",color=Muted)
                 if(splitInstall){
-                    Button(onClick={shareStoreLink()},modifier=Modifier.fillMaxWidth()){Text("Share Play Store link")}
+                    Button(shape=PixelCorners,onClick={shareStoreLink()},modifier=Modifier.fillMaxWidth()){Text("Share Play Store link")}
                     Text("This installation has several APK parts. The store link is simplest for a phone without Share Mode. An offline bundle needs a compatible bundle installer.",color=Muted,style=MaterialTheme.typography.bodySmall)
                 }
-                OutlinedButton(onClick={shareInstaller()},enabled=!state.busy,modifier=Modifier.fillMaxWidth()){Text(if(splitInstall)"Share complete APK bundle" else "Share installer via Android")}
+                OutlinedButton(shape=PixelCorners,onClick={shareInstaller()},enabled=!state.busy,modifier=Modifier.fillMaxWidth()){Text(if(splitInstall)"Share complete APK bundle" else "Share installer via Android")}
                 Text("Choose Bluetooth in Android's sharing screen if needed. This is optional.",color=Muted,style=MaterialTheme.typography.bodySmall)
                 if(!splitInstall){
-                    OutlinedButton(onClick={begin("installer")},enabled=!state.busy,modifier=Modifier.fillMaxWidth()){Text("Show local download QR")}
+                    OutlinedButton(shape=PixelCorners,onClick={begin("installer")},enabled=!state.busy,modifier=Modifier.fillMaxWidth()){Text("Show local download QR")}
                     if(state.appUrl.isNotEmpty())QrCard(state.appUrl,"Use the other phone's camera after it joins the same Wi-Fi/hotspot.")
                 }
                 Spacer(Modifier.height(20.dp))

@@ -69,12 +69,12 @@ class TransferService:Service(){
             "remove_file"->{if(!Model.value.busy){val id=intent.getStringExtra("id");resetTransport();Model.set{it.copy(files=it.files.filterNot{file->file.meta.id==id},status="Removed from selection. The original file stays on this phone.")}}}
             "prepare"->{
                 if(Model.value.busy)return START_NOT_STICKY
-                val existing=Model.value.files
+                val existing=if(intent.getBooleanExtra("replace_selection",false))emptyList()else Model.value.files
                 val uris=intent.getStringArrayListExtra("uris").orEmpty().map(Uri::parse).distinct().filter{uri->existing.none{it.uri==uri}}
                 if(uris.isEmpty()){Model.update(status="Those files are already selected.");return START_NOT_STICKY}
                 if(existing.size+uris.size>16){Model.update(status="Choose up to 16 files per batch.");return START_NOT_STICKY}
                 resetTransport();val version=++preparationVersion;val epoch=Model.epochs.next();Model.set{it.copy(busy=true,preparing=true,status="Preparing files. Nothing sent yet.",mode="send")}
-                preparation=scope.launch{try{val files=withContext(Dispatchers.IO){uris.mapIndexed{index,uri->ReceiveStore.prepare(this@TransferService,uri,checkCancelled={ensureActive()},progress={name,done,total->Model.epochs.update(epoch){if(live)Model.set{it.copy(current=name,currentUri=uri.toString(),done=done,total=total.coerceAtLeast(0),fileIndex=index+1,fileCount=uris.size,status="Preparing file ${index+1} of ${uris.size}. Nothing sent yet.")}}})}};if(preparationVersion!=version)return@launch;preparation=null;Model.set{it.copy(files=existing+files,busy=false,preparing=false,current="",currentUri="",done=0,total=0,fileIndex=0,fileCount=0,status="Files ready. Scan the receiver when you're ready to send.")}}
+                preparation=scope.launch{try{val files=withContext(Dispatchers.IO){uris.mapIndexed{index,uri->ReceiveStore.prepare(this@TransferService,uri,checkCancelled={ensureActive()},progress={name,done,total->Model.epochs.update(epoch){if(live)Model.set{it.copy(current=name,currentUri=uri.toString(),done=done,total=total.coerceAtLeast(0),fileIndex=index+1,fileCount=uris.size,status="Preparing file ${index+1} of ${uris.size}. Nothing sent yet.")}}})}};if(preparationVersion!=version)return@launch;preparation=null;Model.set{it.copy(files=existing+files,busy=false,preparing=false,current="",currentUri="",done=0,total=0,fileIndex=0,fileCount=0,status="Files ready. Choose a receiver to send.")}}
                 catch(e:CancellationException){throw e}
                 catch(e:Exception){if(preparationVersion==version){preparation=null;Model.set{it.copy(busy=false,preparing=false,status=e.message?:"Could not read these files. Choose them again.")}}}}
             }
@@ -114,7 +114,7 @@ class TransferService:Service(){
     }
     private fun addresses()=LocalRouting.advertised(LocalNetworks.addresses(this,hotspot!=null),hotspot!=null)
     private fun releaseJoinedNetwork(){networkCallback?.let{runCatching{getSystemService(ConnectivityManager::class.java).unregisterNetworkCallback(it)}};networkCallback=null;joinedNetwork=null;joinedSsid=null}
-    private fun resetTransport(){serverStart?.cancel();serverStart=null;Model.epochs.next();transport?.close();transport=null;Model.set{it.copy(pairing=null,approval=null,busy=false,current="",currentUri="",done=0,total=0,fileIndex=0,fileCount=0,connection=PeerConnection(),verificationCode="")}}
+    private fun resetTransport(){serverStart?.cancel();serverStart=null;Model.epochs.next();transport?.close();transport=null;Model.set{it.copy(pairing=null,approval=null,busy=false,current="",currentUri="",done=0,total=0,fileIndex=0,fileCount=0,connection=PeerConnection(),verificationCode="",resumedFrom=0,earnedXp=0)}}
     private fun disconnectCurrent(message:String,failed:Boolean=false){val peer=Model.value.connection;resetTransport();releaseJoinedNetwork();Model.set{it.copy(connection=if(failed)peer.advance(ConnectionPhase.FAILED)else peer.disconnect(),status=message)}}
     private fun startServer(mode:String){
         if(Model.value.busy)return
@@ -127,7 +127,7 @@ class TransferService:Service(){
     private fun connect(pair:Pairing,nearbyPeer:NearbyPeer?=null){
         if(pair.mode=="receive"&&Model.value.files.isEmpty()){Model.update(status="Choose files in Send first, then scan the receiver.");return}
         val worker=Transport(this);transport=worker
-        Model.set{it.copy(busy=true,connection=PeerConnection.begin(pair.name),status="Connecting to ${pair.name}…",verificationCode="")}
+        Model.set{it.copy(busy=true,mode=if(pair.mode=="receive")"send" else "receive",connection=PeerConnection.begin(pair.name),status="Connecting to ${pair.name}…",verificationCode="")}
         val connectivity=getSystemService(ConnectivityManager::class.java)
         fun begin(network:Network?,properties:LinkProperties?=null){
             if(!live||transport!==worker)return

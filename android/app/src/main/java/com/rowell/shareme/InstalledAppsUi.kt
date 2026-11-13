@@ -29,7 +29,7 @@ import kotlinx.coroutines.withContext
     LaunchedEffect(Unit){runCatching{withContext(Dispatchers.IO){InstalledApps.list(context)}}.onSuccess{apps=it}.onFailure{error=true}}
     ModalBottomSheet(onDismissRequest=onDismiss,containerColor=Bg,sheetState=rememberModalBottomSheetState(skipPartiallyExpanded=true)) {
         Column(Modifier.fillMaxWidth().fillMaxHeight(.9f).padding(horizontal=24.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
-            Text("Choose an installed app",style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold)
+            Text("Send installed apps",style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold)
             Text("Sends its installer, including APK parts. Accounts and saves stay on this phone. Some apps need the store or extra downloads.",color=Muted,style=MaterialTheme.typography.bodySmall)
             OutlinedTextField(search,{search=it.take(80)},label={Text("Search apps")},singleLine=true,modifier=Modifier.fillMaxWidth())
             if(error)Text("Couldn't read installed apps. You can choose an APK using Choose files.",color=Muted)

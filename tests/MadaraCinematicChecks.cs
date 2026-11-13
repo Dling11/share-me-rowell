@@ -1,0 +1,45 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Security.Cryptography;
+using System.Windows.Forms;
+using ShareMeRowell;
+
+class MadaraCinematicChecks {
+    static void Require(bool value,string message){if(!value)throw new Exception(message);}
+    static IEnumerable<Control> All(Control root){foreach(Control c in root.Controls){yield return c;foreach(var child in All(c))yield return child;}}
+    static string Digest(Bitmap image){using(var data=new MemoryStream()){image.Save(data,ImageFormat.Png);using(var hash=SHA256.Create())return BitConverter.ToString(hash.ComputeHash(data.ToArray()));}}
+    static Bitmap Render(MadaraScene scene,HeroProfile profile,long time,int size=480){var image=new Bitmap(size,size,PixelFormat.Format32bppArgb);using(var g=Graphics.FromImage(image))scene.Draw(g,new Rectangle(0,0,size,size),profile,time);return image;}
+    static void Snapshot(Form form,string path){Application.DoEvents();using(var image=new Bitmap(form.Width,form.Height)){form.DrawToBitmap(image,new Rectangle(Point.Empty,image.Size));image.Save(path);}}
+    [STAThread] static int Main(string[] args){try{
+        string folder=Path.GetFullPath(args[0]);Directory.CreateDirectory(folder);Application.EnableVisualStyles();var checks=new List<string>();
+        var body=new HashSet<int>();var guardian=new HashSet<int>();var eye=new HashSet<int>();for(int time=-50;time<=MadaraSequence.Duration+100;time++){
+            var m=MadaraSequence.At(time);Require(m.Body>=0&&m.Body<24&&m.Guardian>=-1&&m.Guardian<24&&m.Eye>=-1&&m.Eye<16,"Timeline addressed artwork outside its sheet");Require(m.Aura>=0&&m.Aura<=1&&m.Closeup>=0&&m.Closeup<=1,"Timeline alpha is outside its valid range");body.Add(m.Body);if(m.Guardian>=0)guardian.Add(m.Guardian);if(m.Eye>=0)eye.Add(m.Eye);
+        }Require(body.Count==24&&guardian.Count==24&&eye.Count==16,"An authored animation cel was unreachable");var end=MadaraSequence.At(MadaraSequence.Duration);Require(end.Complete&&end.Body==23&&end.Guardian==-1&&end.Eye==-1&&end.Aura==0,"The cinematic did not finish at rest");checks.Add("All64 authored frames are reachable in order, remain in bounds and finish at rest after5.2seconds");
+        var p=new HeroProfile();Require(MadaraSequence.ShouldPlay(p,false,true,true,true,false,false),"Enabled animation was blocked");Require(!MadaraSequence.ShouldPlay(p,false,true,true,false,false,false)&&!MadaraSequence.ShouldPlay(p,false,true,false,true,false,false)&&!MadaraSequence.ShouldPlay(p,false,true,true,true,true,false)&&!MadaraSequence.ShouldPlay(p,false,true,true,true,false,true),"Background, hidden, minimized or completed animation kept running");Require(!MadaraSequence.ShouldPlay(p,true,true,true,true,false,false)&&!MadaraSequence.ShouldPlay(p,false,false,true,true,false,false),"Accessibility motion guard was bypassed");p.MotionOverride=true;Require(MadaraSequence.ShouldPlay(p,false,false,true,true,false,false),"Existing app-only motion opt-in was lost");p.Animations=false;Require(!MadaraSequence.ShouldPlay(p,false,true,true,true,false,false),"Animation Off was overridden");checks.Add("Off, reduced motion, high contrast, hidden/background/minimized/completed guards and explicit app-only opt-in are respected");
+        foreach(string name in new[]{"cast","guardian","eye"})using(var stream=typeof(MadaraScene).Assembly.GetManifestResourceStream("ShareMeRowell.madara_"+name+".png"))using(var sheet=new Bitmap(stream)){
+            int rows=name=="eye"?4:6,size=sheet.Width/4;Require(sheet.Width%4==0&&sheet.Height==rows*size&&size>=256,"Cinematic art was reduced or packed incorrectly");for(int frame=0;frame<rows*4;frame++){int visible=0,clear=0;for(int y=0;y<size;y+=4)for(int x=0;x<size;x+=4){int a=sheet.GetPixel(frame%4*size+x,frame/4*size+y).A;if(a>100)visible++;if(a<=8)clear++;}Require(visible>(name=="guardian"?1:150),"An authored cel is empty: "+name+frame);Require(clear>10,"An opaque tile background replaced transparency: "+name+frame);}
+        }checks.Add("All64 production cels have visible artwork, genuine alpha and at least256px source resolution");
+        var profile=new HeroProfile{Role=23};var varied=new HeroProfile{Role=23,Look=1,Hair=5,HairColour=5,Skin=4,Shirt=3,Eyes=3,Element=5};long total=0;int frames=0;using(var scene=new MadaraScene()){
+            var hashes=new HashSet<string>();foreach(int time in new[]{0,900,1800,2600,3500,4500,5200})using(var image=Render(scene,profile,time)){hashes.Add(Digest(image));image.Save(Path.Combine(folder,"madara-"+time+".png"));using(var alternate=Render(scene,varied,time))Require(Digest(alternate)==Digest(image),"Personal appearance altered a fixed cinematic");}Require(hashes.Count==7,"The cinematic reused a still image across phases");
+            string review=Path.Combine(folder,"frames");Directory.CreateDirectory(review);var watch=Stopwatch.StartNew();for(int time=0;time<=MadaraSequence.Duration;time+=50)using(var image=Render(scene,profile,time)){image.Save(Path.Combine(review,"frame-"+frames.ToString("000")+".png"));frames++;}total=watch.ElapsedMilliseconds;
+            var pixel=profile.Copy();pixel.PixelPreview=true;foreach(int time in new[]{900,1800,3500})using(var image=Render(scene,pixel,time))image.Save(Path.Combine(folder,"madara-pixel-"+time+".png"));
+            using(var board=new Bitmap(1440,528))using(var g=Graphics.FromImage(board))using(var font=new Font("Segoe UI",12,FontStyle.Bold)){g.Clear(Palette.Page);int column=0;foreach(int time in new[]{900,1800,3500}){scene.Draw(g,new Rectangle(column*480,0,480,480),profile,time);g.DrawString(MadaraSequence.At(time).Caption,font,Brushes.White,column*480+18,492);column++;}board.Save(Path.Combine(folder,"madara-storyboard.png"));}
+        }checks.Add("Actual HD/Pixel renderer produces distinct hand-sign, eye, emergence, guardian and recovery scenes while ignoring personal style");
+        string state=Path.Combine(folder,"isolated-state");using(var store=new JourneyStore(state)){
+            var off=store.Profile.Copy();off.Animations=false;Require(store.SaveProfile(off),"Isolated Off profile could not be saved");using(var form=new AdventurerForm(store,()=>{})){
+                form.ShowInTaskbar=false;form.StartPosition=FormStartPosition.Manual;form.Location=new Point(-20000,-20000);form.Show();Application.DoEvents();var entry=All(form).OfType<SoftButton>().Single(b=>b.AccessibleName=="Use character skill");Require(!entry.Visible,"Signature action appeared on another character");All(form).OfType<TextBox>().Single(c=>c.AccessibleName=="Search characters").Text="Madara";All(form).OfType<CharacterTile>().Single(c=>c.RoleIndex==23).PerformClick();Application.DoEvents();Require(entry.Visible&&!entry.Enabled&&entry.Text=="Use skill","Animation Off did not disable the inline activator");var skill=All(form).OfType<CharacterSkillPreview>().Single();int forms=Application.OpenForms.Count;entry.PerformClick();Require(!skill.Running&&Application.OpenForms.Count==forms,"Off created playback or another window");Snapshot(form,Path.Combine(folder,"madara-entry.png"));Require(store.Xp==0&&store.Profile.Role==0&&!store.Profile.Animations,"Inline preview changed XP, equipment or Off");form.Close();
+            }
+        }using(var store=new JourneyStore(state))Require(store.Xp==0&&store.Profile.Role==0&&!store.Profile.Animations,"Inline preview changed saved state after restart");checks.Add("Inline Madara activator respects Off and creates no popup, equipment change or XP after restart");
+        using(var store=new JourneyStore(state))using(var form=new AdventurerForm(store,()=>{})){
+            form.ShowInTaskbar=false;form.StartPosition=FormStartPosition.Manual;form.Location=new Point(-20000,-20000);form.Show();Application.DoEvents();All(form).OfType<TextBox>().Single(c=>c.AccessibleName=="Search characters").Text="Madara";All(form).OfType<CharacterTile>().Single(c=>c.RoleIndex==23).PerformClick();var auto=All(form).OfType<SoftButton>().Single(b=>b.AccessibleName=="Automatically use unlocked skills");Require(auto.Visible&&auto.Selected,"Auto preference was missing");auto.PerformClick();Require(!store.Profile.AutoSkills&&!store.Profile.Animations&&store.Xp==0,"Auto changed Off or XP");form.Close();
+        }using(var store=new JourneyStore(state))Require(!store.Profile.AutoSkills&&!store.Profile.Animations,"Auto preference did not survive restart");checks.Add("Auto preference saves independently of Off and earned progress across restart");
+        bool timerPlaybackVerified=false;
+        File.WriteAllText(Path.Combine(folder,"result.json"),Wire.Encode(new{passed=checks.Count,checks=checks,authoredFrames=64,durationMilliseconds=MadaraSequence.Duration,exportedReviewFrames=frames,renderAndPngExportMilliseconds=total,timerPlaybackVerified=timerPlaybackVerified,artifactDirectory=folder,phoneUsed=false,realProgressUsed=false}));Console.WriteLine(string.Join(Environment.NewLine,checks));return 0;
+    }catch(Exception error){Console.Error.WriteLine(error);return 1;}}
+}

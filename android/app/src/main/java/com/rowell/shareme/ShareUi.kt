@@ -4,6 +4,8 @@ import android.graphics.Bitmap
 import android.graphics.ImageDecoder
 import android.net.Uri
 import android.util.Size
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -34,9 +36,10 @@ import com.google.zxing.qrcode.QRCodeWriter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+val PixelCorners=CutCornerShape(8.dp)
 val Bg=Color(0xFF0C131E);val Panel=Color(0xFF162232);val Mint=Color(0xFF70E2C2);val Muted=Color(0xFFABBCD0)
-@Composable fun ShareTheme(content:@Composable ()->Unit) { MaterialTheme(colorScheme=darkColorScheme(primary=Mint,onPrimary=Bg,background=Bg,surface=Panel,onSurface=Color(0xFFF5F8FF),secondary=Mint,surfaceVariant=Color(0xFF1D2D3F),onSurfaceVariant=Muted,outline=Color(0xFF51677E)),shapes=Shapes(small=RoundedCornerShape(12.dp),medium=RoundedCornerShape(18.dp),large=RoundedCornerShape(24.dp)),content=content) }
-@Composable fun CardBox(content:@Composable ColumnScope.()->Unit) { Surface(color=Panel,shape=RoundedCornerShape(20.dp),modifier=Modifier.fillMaxWidth()){Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(12.dp),content=content)} }
+@Composable fun ShareTheme(content:@Composable ()->Unit) { MaterialTheme(colorScheme=darkColorScheme(primary=Mint,onPrimary=Bg,background=Bg,surface=Panel,onSurface=Color(0xFFF5F8FF),secondary=Mint,surfaceVariant=Color(0xFF1D2D3F),onSurfaceVariant=Muted,outline=Color(0xFF51677E)),shapes=Shapes(small=CutCornerShape(4.dp),medium=PixelCorners,large=CutCornerShape(12.dp)),content=content) }
+@Composable fun CardBox(content:@Composable ColumnScope.()->Unit) { Surface(color=Panel,shape=PixelCorners,border=BorderStroke(1.dp,Color(0xFF33465F)),modifier=Modifier.fillMaxWidth()){Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(12.dp),content=content)} }
 @Composable fun FileThumb(uri:Uri?,name:String,modifier:Modifier=Modifier.size(52.dp)) {
     val context=LocalContext.current
     var bitmap by remember(uri) { mutableStateOf<Bitmap?>(null) }
@@ -57,7 +60,7 @@ val Bg=Color(0xFF0C131E);val Panel=Color(0xFF162232);val Mint=Color(0xFF70E2C2);
     }
 }
 @Composable fun FileRow(name:String,bytes:Long,uri:Uri?,onOpen:()->Unit,onRemove:(()->Unit)?=null) {
-    Surface(color=Panel,shape=RoundedCornerShape(16.dp),modifier=Modifier.fillMaxWidth()) {
+    Surface(color=Panel,shape=PixelCorners,modifier=Modifier.fillMaxWidth()) {
         Row(Modifier.clickable(onClick=onOpen).padding(start=12.dp,top=12.dp,bottom=12.dp,end=4.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) {
             FileThumb(uri,name)
             Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(4.dp)) { Text(name,maxLines=3,overflow=TextOverflow.Ellipsis,style=MaterialTheme.typography.bodyLarge,fontWeight=FontWeight.Medium);Text("${size(bytes)} · ${fileType(name)}",color=Muted,style=MaterialTheme.typography.bodySmall) }
@@ -83,6 +86,7 @@ val Bg=Color(0xFF0C131E);val Panel=Color(0xFF162232);val Mint=Color(0xFF70E2C2);
             if(state.total>0)LinearProgressIndicator(progress={(state.done.toDouble()/state.total).toFloat().coerceIn(0f,1f)},modifier=Modifier.fillMaxWidth())else LinearProgressIndicator(Modifier.fillMaxWidth())
             if(state.fileCount>0)Text("File ${state.fileIndex} of ${state.fileCount} · ${size(state.done)} / ${size(state.total)}",color=Muted,style=MaterialTheme.typography.bodySmall)
             else Text(state.status,color=Muted,style=MaterialTheme.typography.bodySmall)
+            if(state.resumedFrom>0)Text(if(state.resumedFrom==state.total)"Already received · verifying saved file" else "Resumed from ${size(state.resumedFrom)}",color=Mint,style=MaterialTheme.typography.bodySmall)
         }
     }
 }
@@ -105,7 +109,7 @@ val Bg=Color(0xFF0C131E);val Panel=Color(0xFF162232);val Mint=Color(0xFF70E2C2);
         Text("Scan the QR in Share Mode to join. No password typing needed.",color=Muted,style=MaterialTheme.typography.bodySmall)
         TextButton(onClick={manual=!manual}){Text(if(manual)"Hide network details" else "Join manually")}
         if(manual)SelectionContainer{Text("${state.ssid}\nPassword: ${state.password}",color=Muted,style=MaterialTheme.typography.bodySmall)}
-    } else OutlinedButton(onClick=onStart,enabled=enabled,modifier=Modifier.fillMaxWidth()){Icon(Icons.Rounded.Wifi,null,Modifier.size(18.dp));Spacer(Modifier.width(8.dp));Text("No Wi-Fi? Create an offline hotspot")}
+    } else OutlinedButton(shape=PixelCorners,onClick=onStart,enabled=enabled,modifier=Modifier.fillMaxWidth()){Icon(Icons.Rounded.Wifi,null,Modifier.size(18.dp));Spacer(Modifier.width(8.dp));Text("No Wi-Fi? Create an offline hotspot")}
 }
 fun fileType(name:String)=name.substringAfterLast('.',"FILE").uppercase().take(10)
 fun size(bytes:Long):String { var value=bytes.toDouble();val units=arrayOf("B","KB","MB","GB","TB");var index=0;while(value>=1024&&index<4){value/=1024;index++};return if(index==0)"$bytes B" else "%.1f %s".format(value,units[index]) }

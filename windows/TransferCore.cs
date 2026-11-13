@@ -106,6 +106,9 @@ namespace ShareMeRowell {
         public Action<string,long,long> Progress;
         public Action<string> Status;
         public Action<string,string,long,string> Completed;
+        public Action<int> XpEarned;
+        public readonly JourneyStore Journey;
+        public int EarnedXp {get;private set;}
         public string Name = Environment.MachineName;
         public string Mode = "receive";
         public List<Source> Sources = new List<Source>();
@@ -127,6 +130,7 @@ namespace ShareMeRowell {
         private void FilePosition(int index,int count){lock(gate){if(!connection.Terminal)connection=new ConnectionSnapshot(connection.Peer,connection.Phase,index,count);}}
         public TransferServer(string destination, string stateDirectory) {
             Destination=System.IO.Path.GetFullPath(destination); Directory.CreateDirectory(Destination); Directory.CreateDirectory(stateDirectory);
+            Journey=new JourneyStore(stateDirectory);Name=Journey.Profile.Name;
             string certPath=System.IO.Path.Combine(stateDirectory,"identity.dpapi");
             if(File.Exists(certPath)) Certificate=new X509Certificate2(ProtectedData.Unprotect(File.ReadAllBytes(certPath),null,DataProtectionScope.CurrentUser),"rowell-local",X509KeyStorageFlags.UserKeySet|X509KeyStorageFlags.Exportable);
             else {
@@ -175,6 +179,7 @@ namespace ShareMeRowell {
                     if(op=="push" && mode=="receive") files=Wire.Files(request);
                     else if(op=="pull" && mode=="send" && sources.Count>0) files=sources.Select(s=>s.Meta).ToList();
                     else {Phase(ConnectionPhase.Failed);Reject(ssl,"Choose Send on one device and Receive on the other.");return;}
+                    EarnedXp=0;
                     client.ReceiveTimeout=120000;
                     sessionCancellation.Token.ThrowIfCancellationRequested();
                     bool allowed=Approve!=null&&Approve(peer,files,sessionCancellation.Token);
@@ -193,10 +198,11 @@ namespace ShareMeRowell {
                             int index=i; long offset=offsets[i]; if(offset<0 || offset>files[i].size) throw new IOException("Invalid resume position.");
                             using(var input=sources[i].Open(offset)) Wire.Copy(input,ssl,files[i].size-offset,done=>{if(Progress!=null) Progress(files[index].name,offset+done,files[index].size);});
                             Phase(ConnectionPhase.Verifying);var ack=Wire.Read(ssl); if(!Wire.Ok(ack)) throw new IOException(Convert.ToString(ack.ContainsKey("error")?ack["error"]:"Verification failed."));
+                            CreditVerified(files[i]);
                             if(Completed!=null) Completed("Sent",files[i].name,files[i].size,sources[i].Path);
                         }
                     }
-                    Phase(ConnectionPhase.Finished);if(Status!=null) Status("Transfer complete. Files verified.");
+                    Phase(ConnectionPhase.Finished);if(Status!=null) Status("Transfer complete. Files verified."+(EarnedXp>0?"  +"+EarnedXp+" XP":""));
                 }
             } catch(Exception error) { if(claimed&&!stopped&&!Connection.Terminal){Phase(ConnectionPhase.Failed);if(Status!=null&&!(sessionCancellation!=null&&sessionCancellation.IsCancellationRequested))Status(Wire.TransferError(error));} }
             finally {client.Close();lock(gate){clients.Remove(client);if(claimed){busy=0;cancellation=null;}}if(sessionCancellation!=null)sessionCancellation.Dispose();}
@@ -219,11 +225,13 @@ namespace ShareMeRowell {
                 string destination=System.IO.Path.Combine(Destination,file.name); int suffix=2;
                 while(File.Exists(destination)||Directory.Exists(destination)) {destination=System.IO.Path.Combine(Destination,System.IO.Path.GetFileNameWithoutExtension(file.name)+" ("+(suffix++)+")"+System.IO.Path.GetExtension(file.name));}
                 lock(gate){cancellation.ThrowIfCancellationRequested();File.Move(partial,destination);}
+                CreditVerified(file);
                 if(Completed!=null) Completed("Received",System.IO.Path.GetFileName(destination),file.size,destination);
                 Wire.Write(stream,new Dictionary<string,object>{{"ok",true},{"index",i}});
             }
         }
-        public void Dispose() {stopped=true;if(listener!=null)listener.Stop();CancelActive();lock(gate)clients.Clear();Certificate.Dispose();}
+        void CreditVerified(FileMeta file){int points=Journey.AwardVerified(file);EarnedXp=Math.Min(800,EarnedXp+points);if(XpEarned!=null)XpEarned(points);}
+        public void Dispose() {stopped=true;if(listener!=null)listener.Stop();CancelActive();lock(gate)clients.Clear();Journey.Dispose();Certificate.Dispose();}
     }
 
     public sealed class InstallerServer : IDisposable {

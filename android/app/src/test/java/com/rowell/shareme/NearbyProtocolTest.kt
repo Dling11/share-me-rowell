@@ -42,7 +42,7 @@ class NearbyProtocolTest {
     }
     @Test fun avatarParsingBoundsEveryDrawingIndex(){
         assertEquals(profile.avatar,AvatarStyle.parse(profile.avatar.encode()))
-        for(value in listOf("6.0.0.0.0","0.-1.0.0.0","0.0.5.0.0","0.0.0.5.0","0.0.0.0.3","0.0.0.0.0.2","0.0.0.0.0.-1","0.0.0.0.0.1.0","0.0","a.b.c.d.e"))rejected{AvatarStyle.parse(value)}
+        for(value in listOf("6.0.0.0.0","0.-1.0.0.0","0.0.6.0.0","0.0.0.5.0","0.0.0.0.4","0.0.0.0.0.2","0.0.0.0.0.-1","0.0.0.0.0.1.0","0.0","a.b.c.d.e"))rejected{AvatarStyle.parse(value)}
         repeat(100){val style=AvatarStyle.random();assertEquals(style,AvatarStyle.parse(style.encode()))}
     }
     @Test fun girlStyleSurvivesDiscoveryWithoutBreakingOlderAvatarReaders(){
@@ -62,5 +62,14 @@ class NearbyProtocolTest {
         assertFalse(SharingLifetime.shouldStop(true,false,false,999999))
         assertFalse(SharingLifetime.shouldStop(false,true,false,999999))
         assertFalse(SharingLifetime.shouldStop(false,false,true,999999))
+    }
+    @Test fun silverHairPersistsLocallyAndUsesAnOptionalToneForOlderPeers(){
+        val silver=profile.copy(avatar=profile.avatar.copy(hairColour=5,look=1))
+        assertEquals(silver.avatar,AvatarStyle.parse(silver.avatar.encode()))
+        val attributes=NearbyProtocol.attributes(silver,pair)
+        assertEquals("5",attributes["hairTone"])
+        assertEquals(2,AvatarStyle.parse(attributes.getValue("avatar")).hairColour)
+        assertEquals(silver.avatar,NearbyProtocol.parse("192.168.1.2",48900,attributes).avatar)
+        for(tone in listOf("6","-1","silver",""))rejected{NearbyProtocol.parse("192.168.1.2",48900,attributes+mapOf("hairTone" to tone))}
     }
 }

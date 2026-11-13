@@ -1,0 +1,116 @@
+{
+  "version": "Windows 1.2.8",
+  "sourceArtworkUnchanged": true,
+  "desktopPortraits": [
+    {
+      "file": "portrait_boa.png",
+      "bytes": 1838606,
+      "sha256": "49559f82e3314be87c3c0d6a687bfe25ec4588590c39889f7e453924443e22a4",
+      "cellPixels": 256
+    },
+    {
+      "file": "portrait_custom_boy.png",
+      "bytes": 1674183,
+      "sha256": "a87352983554135913514f4b69f5a20e7549c38200a1e1c55248fb9080d7a138",
+      "cellPixels": 256
+    },
+    {
+      "file": "portrait_custom_girl.png",
+      "bytes": 1856247,
+      "sha256": "7bd48bafc2f140800bf9ca9c88bc2fffbfbeb653f6344fc72e794c76caba2498",
+      "cellPixels": 256
+    },
+    {
+      "file": "portrait_eren.png",
+      "bytes": 1828977,
+      "sha256": "5df9fc5c1b4f813954e1d4b734c7b0a2ce7660667eebb41b9d8352b110715444",
+      "cellPixels": 256
+    },
+    {
+      "file": "portrait_itachi.png",
+      "bytes": 1713237,
+      "sha256": "c6a62fb759f30e7b28308a16710f308eabc9c51bd839178139619afd6bdf27ed",
+      "cellPixels": 256
+    },
+    {
+      "file": "portrait_levi.png",
+      "bytes": 1681129,
+      "sha256": "7e7dfc606f55aa12c2d5f55280866a3b9a741edfb4e355be0d62c134d85e260b",
+      "cellPixels": 256
+    },
+    {
+      "file": "portrait_luffy.png",
+      "bytes": 1803464,
+      "sha256": "c318fa3bc32090e240f7036c8d6dba1d2db057cc043bea8019cd2fb7dbbc7ece",
+      "cellPixels": 256
+    },
+    {
+      "file": "portrait_madara.png",
+      "bytes": 2165813,
+      "sha256": "bcc524f676421ad74f313614cd96a9e001ce6662f41be288c82ff41edeb4e5ec",
+      "cellPixels": 256
+    },
+    {
+      "file": "portrait_might_guy.png",
+      "bytes": 1688588,
+      "sha256": "88952cc0c6508d49052108c2965aaf9def9f320bbbdbdb045d2df5e33b169378",
+      "cellPixels": 256
+    },
+    {
+      "file": "portrait_mikasa.png",
+      "bytes": 1864664,
+      "sha256": "d599a2830fe8525da059cd14646681b47a14bf0a8ca4c125d9012c69d546576d",
+      "cellPixels": 256
+    },
+    {
+      "file": "portrait_rock_lee.png",
+      "bytes": 1615032,
+      "sha256": "4eabe614e73cd858d1f3b0a963de33691357c4aded4f504d862b05ee94b0abb4",
+      "cellPixels": 256
+    },
+    {
+      "file": "portrait_seraph.png",
+      "bytes": 2527926,
+      "sha256": "70303e6b640806c7dae7fc6b8c2008762f1ed316168b30696db34d99e8c7eded",
+      "cellPixels": 256
+    },
+    {
+      "file": "portrait_shanks.png",
+      "bytes": 2011215,
+      "sha256": "cf37389d220dafd90128e809ddb8dfb75eee5ab099edff89d0eebda03d1a921f",
+      "cellPixels": 256
+    },
+    {
+      "file": "portrait_sovereign.png",
+      "bytes": 2129147,
+      "sha256": "d4ae5cf9997d9c4ed9140accc11f07235d47479bb5ffeac8305af4ac42393599",
+      "cellPixels": 256
+    },
+    {
+      "file": "portrait_special.png",
+      "bytes": 1807897,
+      "sha256": "6f357f597dd1cf3e77c341906d0f40e10f4936ecefb671352bdec7bcf1e4708c",
+      "cellPixels": 256
+    },
+    {
+      "file": "portrait_sukuna.png",
+      "bytes": 1892358,
+      "sha256": "1a8fa77809fff8e29f7962637967ce312c286538fd5476611e45bcfd718e4e1a",
+      "cellPixels": 256
+    },
+    {
+      "file": "portrait_yugi.png",
+      "bytes": 1234803,
+      "sha256": "175b521b10979df8c4a81e997c5621b55a6d62e3f676145f6c0477edbb0795fa",
+      "cellPixels": 256
+    },
+    {
+      "file": "portrait_zoro.png",
+      "bytes": 1872643,
+      "sha256": "b20eb746db9ecde8cc31c56c70b94131cc1888a6b2a1c8f17498e55c3acbfcf2",
+      "cellPixels": 256
+    }
+  ],
+  "pixelPreview": "Derived locally, nearest neighbor, 128-pixel cels and integer enlargement",
+  "pngCompression": "Adaptive filters and deflate; visible RGBA unchanged"
+}

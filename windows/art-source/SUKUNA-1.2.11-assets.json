@@ -1,0 +1,62 @@
+{
+  "version": "Windows 1.2.11",
+  "generationMode": "built-in imagegen",
+  "generationCalls": 3,
+  "selectedAtlases": 3,
+  "authoredRuntimeFrames": 64,
+  "promptRecord": "SUKUNA-1.2.11.md",
+  "sources": [
+    {
+      "file": "windows/art-source/sukuna-cast-source-1.2.11.png",
+      "sha256": "fdb61c89c4351ae5195e4dfdf7cc3fafc816121ef0986ec65fd4617a708dc2aa",
+      "original": "exec-41547e6f-b991-439b-b476-d47305042de1.png",
+      "width": 1024,
+      "height": 1536,
+      "frames": 24,
+      "originalUnmodified": true
+    },
+    {
+      "file": "windows/art-source/sukuna-shrine-source-1.2.11.png",
+      "sha256": "c3efe647bae62f18d01bc94aa88fb0dd69fb9afb8a88ee0e647d79ab5cb36731",
+      "original": "exec-54584dde-cf4a-43d5-90d5-11e4559beeae.png",
+      "width": 1024,
+      "height": 1536,
+      "frames": 24,
+      "originalUnmodified": true
+    },
+    {
+      "file": "windows/art-source/sukuna-eye-source-1.2.11.png",
+      "sha256": "da21f551afb90257e757faabf40c006f184617524881f2485d3cbb433d112724",
+      "original": "exec-12f5650b-faf1-40e3-80d0-42177f75ebcd.png",
+      "width": 1254,
+      "height": 1254,
+      "frames": 16,
+      "originalUnmodified": true
+    }
+  ],
+  "runtimeAtlases": [
+    {
+      "file": "windows/art/sukuna_cast.png",
+      "sha256": "bed8e1d7673df71f12766c9bdd59870ed8d026eb627246b0b6349f4b4e8ff744",
+      "bytes": 1841393,
+      "cellPixels": 256,
+      "frames": 24
+    },
+    {
+      "file": "windows/art/sukuna_shrine.png",
+      "sha256": "33f10ed8580145c65e03bccdaaf1595dea4271765285c0efa323a5e0b0a57bf1",
+      "bytes": 2095295,
+      "cellPixels": 256,
+      "frames": 24
+    },
+    {
+      "file": "windows/art/sukuna_eye.png",
+      "sha256": "5d8132b0254fcaadfe23adadaa9ea6328ede09fa7206b851d894a081f106869b",
+      "bytes": 2598778,
+      "cellPixels": 313,
+      "frames": 16
+    }
+  ],
+  "sourceAndReviewFilesInstalled": false,
+  "embeddedProductionImages": 43
+}

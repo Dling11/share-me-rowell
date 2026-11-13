@@ -26,7 +26,27 @@ class ReceiveStore(private val context: Context) {
     private val prefs = context.getSharedPreferences("transfers", Context.MODE_PRIVATE)
     private val resolver = context.contentResolver
     private fun key(file: FileMeta) = "part-${file.sha}-${file.size}"
-    fun offset(file: FileMeta): Long {
+    private fun receiptKey(file:FileMeta)="receipt-${file.id}-${file.sha}-${file.size}"
+    private fun completed(file:FileMeta):Uri? {
+        val key=receiptKey(file)
+        val saved=prefs.getString(key,null)?:return null
+        val uri=runCatching{
+            val receipt=JSONObject(saved)
+            check(System.currentTimeMillis()-receipt.getLong("time") in 0..24*60*60*1000L)
+            Uri.parse(receipt.getString("uri")).also{value->resolver.openFileDescriptor(value,"r")!!.use{check(it.statSize==file.size)}}
+        }.getOrNull()
+        if(uri==null)prefs.edit().remove(key).commit()
+        return uri
+    }
+    private fun rememberCompleted(file:FileMeta,uri:Uri) {
+        val receipts=prefs.all.filterKeys{it.startsWith("receipt-")}.entries.sortedByDescending{runCatching{JSONObject(it.value as String).getLong("time")}.getOrDefault(0)}
+        val edit=prefs.edit()
+        receipts.drop(49).forEach{edit.remove(it.key)}
+        edit.putString(receiptKey(file),JSONObject().put("uri",uri.toString()).put("time",System.currentTimeMillis()).toString()).commit()
+    }
+    fun offset(file: FileMeta,allowPartial:Boolean=true): Long {
+        if(completed(file)!=null)return file.size
+        if(!allowPartial)return 0
         val value = prefs.getString(key(file), null) ?: return 0
         return runCatching { resolver.openFileDescriptor(Uri.parse(value), "r")!!.use { it.statSize.coerceAtLeast(0) } }.getOrElse { prefs.edit().remove(key(file)).commit(); 0 }.coerceAtMost(file.size)
     }
@@ -48,6 +68,12 @@ class ReceiveStore(private val context: Context) {
     }
     fun receive(file: FileMeta, offset: Long, input: InputStream, verifying:()->Unit,checkCancelled:()->Unit={},progress: (Long)->Unit): Uri {
         checkCancelled()
+        if(offset==file.size)completed(file)?.let{uri->
+            verifying()
+            val digest=resolver.openInputStream(uri)!!.use{sha256(it,checkCancelled)}
+            if(digest!=file.sha){prefs.edit().remove(receiptKey(file)).commit();error("The saved file changed. Retry to receive it again.")}
+            progress(file.size);return uri
+        }
         val uri=part(file)
         val descriptor=checkNotNull(resolver.openFileDescriptor(uri,"rw"))
         ParcelFileDescriptor.AutoCloseOutputStream(descriptor).use { output ->
@@ -62,6 +88,8 @@ class ReceiveStore(private val context: Context) {
         checkCancelled();check(resolver.update(uri,ContentValues().apply{put(MediaStore.Downloads.IS_PENDING,0)},null,null)>0)
         prefs.edit().remove(key(file)).commit()
         val shown=resolver.query(uri,arrayOf(MediaStore.Downloads.DISPLAY_NAME),null,null,null)?.use{if(it.moveToFirst())it.getString(0)else null}?:file.name
+        rememberCompleted(file,uri)
+        JourneyStore.award(context,file)
         addHistory("Received",shown,file.size,uri.toString())
         return uri
     }

@@ -29,8 +29,8 @@ class NearbyDiscovery(context:Context):Closeable {
         if(closed)return
         val pair=state.pairing
         val visible=state.uiVisible && state.uiPage=="receive" && !state.busy && pair?.mode=="receive"
-        val key=if(visible)"${pair!!.code}:${state.profile.name}:${state.profile.avatar.encode()}" else ""
-        if(key!=advertisedKey){stopAdvertising();if(visible)advertise(pair!!,state.profile,key)}
+        val key=if(visible)"${pair!!.code}:${state.profile.name}:${state.profile.avatar.encode()}:${state.journey.level}" else ""
+        if(key!=advertisedKey){stopAdvertising();if(visible)advertise(pair!!,state.profile,key,state.journey.level)}
         val actuallyVisible=visible&&advertisingReady
         Model.set{if(it.nearbyVisible==actuallyVisible)it else it.copy(nearbyVisible=actuallyVisible)}
         val browse=state.uiVisible && state.uiPage=="send" && state.files.isNotEmpty() && !state.busy
@@ -42,10 +42,10 @@ class NearbyDiscovery(context:Context):Closeable {
             publish();resolveNext(generation)
         }
     }
-    private fun advertise(pair:Pairing,profile:ShareProfile,key:String) {
+    private fun advertise(pair:Pairing,profile:ShareProfile,key:String,level:Int) {
         val info=NsdServiceInfo().apply {
             serviceName="ShareMode-${profile.id.take(8)}";serviceType=NearbyProtocol.SERVICE_TYPE;port=pair.port
-            NearbyProtocol.attributes(profile,pair).forEach{(name,value)->setAttribute(name,value)}
+            NearbyProtocol.attributes(profile,pair,level).forEach{(name,value)->setAttribute(name,value)}
         }
         val listener=object:NsdManager.RegistrationListener {
             override fun onServiceRegistered(info:NsdServiceInfo){main.post{if(registration===this){advertisingReady=true;Model.set{it.copy(nearbyVisible=it.uiVisible&&it.uiPage=="receive"&&!it.busy)}}}}
