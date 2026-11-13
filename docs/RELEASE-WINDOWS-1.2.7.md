@@ -19,6 +19,4 @@ The **Android 1.2.6 APK is unchanged**, as are its 37 runtime source files, buil
 
 All art is bundled locally; no engine, account, network artwork download or extra app runtime was introduced. The high-resolution original sources stay outside runtime resources. The optional authoring utility is `scripts/CompilePortraitArt.cs`; normal Windows builds use the precompiled portrait PNGs.
 
-See the appearance editor (retired preview/source), [collection](../assets/windows-studio-characters-1.2.7.png), [journey](../assets/windows-studio-journey-1.2.7.png), [default-avatar art record](../android/art/PC-CUSTOM-1.2.7.md) and [fantasy art record](../android/art/PC-STUDIO-1.2.7.md). The source art was generated with the built-in image tool, one character per generation; original outputs and exact prompts are preserved.
-
 This is a local PC candidate. GitHub releases, public ZIPs and website downloads are unchanged; the existing public packaging guard remains in place.

@@ -83,9 +83,12 @@ val Bg=Color(0xFF0C131E);val Panel=Color(0xFF162232);val Mint=Color(0xFF70E2C2);
                 Text("Transfer code · ${state.verificationCode}",color=Mint,style=MaterialTheme.typography.labelLarge)
                 Text("Check that this matches the other phone.",color=Muted,style=MaterialTheme.typography.bodySmall)
             }
-            if(state.total>0)LinearProgressIndicator(progress={(state.done.toDouble()/state.total).toFloat().coerceIn(0f,1f)},modifier=Modifier.fillMaxWidth())else LinearProgressIndicator(Modifier.fillMaxWidth())
-            if(state.fileCount>0)Text("File ${state.fileIndex} of ${state.fileCount} · ${size(state.done)} / ${size(state.total)}",color=Muted,style=MaterialTheme.typography.bodySmall)
-            else Text(state.status,color=Muted,style=MaterialTheme.typography.bodySmall)
+            if(!state.preparing&&state.connection.visible)TransferAvatarShowcase(state,showProgress=true)
+            else {
+                if(state.total>0)LinearProgressIndicator(progress={(state.done.toDouble()/state.total).toFloat().coerceIn(0f,1f)},modifier=Modifier.fillMaxWidth())else LinearProgressIndicator(Modifier.fillMaxWidth())
+                if(state.fileCount>0)Text("File ${state.fileIndex} of ${state.fileCount} · ${size(state.done)} / ${size(state.total)}",color=Muted,style=MaterialTheme.typography.bodySmall)
+                else Text(state.status,color=Muted,style=MaterialTheme.typography.bodySmall)
+            }
             if(state.resumedFrom>0)Text(if(state.resumedFrom==state.total)"Already received · verifying saved file" else "Resumed from ${size(state.resumedFrom)}",color=Mint,style=MaterialTheme.typography.bodySmall)
         }
     }

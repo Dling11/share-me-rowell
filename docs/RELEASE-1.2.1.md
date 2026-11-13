@@ -14,8 +14,6 @@ Android development candidate, version code 9. Includes the preceding 1.2.0 avat
 
 The APK is **2,768,494 bytes (about 2.77 MB)**, 113,388 bytes larger than 1.2.0. There is no new runtime dependency or game engine. The build compiles generated source art into a 256x256 equipment atlas (71,494 bytes) and a 192x192 face/hair atlas (24,912 bytes). Full-resolution source images stay outside the APK. Recolour caches are bounded.
 
-[Character gallery](../assets/android-adventurer-gallery.png) · [Actual app idle preview](../assets/android-pixel-idle.gif) · [Artwork sources and exact prompts](../android/art/README.md)
-
 ## Validation and compatibility
 
 All **79 automated tests pass**, including the generated layer registration, expressions, skin/hair recolouring, discrete idle movement and animation-off freeze. Existing small-phone QR layout, autosave, character gates, XP receipts and resume checks remain covered. Release lint has **0 errors and 48 warnings**. APK and AAB signatures match the original signer.

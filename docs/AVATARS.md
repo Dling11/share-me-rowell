@@ -73,36 +73,27 @@ Gojo-, Saitama- and Naruto-inspired heroes have complete fixed artwork, includin
 
 ## Card Duelist (1.2.5)
 
-Yugi-inspired joins the fixed signatures at **Level 50** as Card Duelist, with the Pharaoh Duelist mastery outfit at **Level 95**. Unlocking enables Equip; it never changes your choice automatically. Both outfits have eight authored cels: idle, blink, left/right turns, card presentation, pendant glint, cheer and smirk. Tap the large avatar for the cheer. The same motion/background/transfer guards apply. All previous character IDs and unlock levels are retained, and personal appearance survives switching to and from this character. See [the update](RELEASE-1.2.5.md) and actual-renderer animation (retired preview/source).
 
 ## Favourite collection (1.2.6)
 
-Twelve individually generated characters join the fixed signatures, each with12 cels for its first outfit and12 for earned mastery. The picker is ordered by unlock level. Luffy, Zoro, Boa Hancock, Shanks, Eren, Levi, Mikasa, Sukuna, Itachi, Rock Lee, Might Guy and Madara each have an individual design, locked preview and equip action. Madara uses a cold-eyed, imposing stance and controlled power reaction. New first/mastery gates are listed in [the collection notes](RELEASE-1.2.6.md); old characters and XP remain unchanged. Switching away restores the saved personal style. See all new outfits (retired preview/source) and Madara's actual-renderer animation (retired preview/source).
 
 ## Windows avatar studio (1.2.7)
 
 On PC, Your adventurer opens a searchable collection beside a complete-character preview. Style offers visual hairstyle choices and skin/hair/outfit/accent swatches, with autosave. The personal default uses whole Boy/Girl character cels instead of separate head/body layers. Featured contains this default and18 fixed signatures, including the newly drawn Heavenly Seraph and Astral Sovereign; older custom RPG styles remain under All characters or Customizable. Personal choices are retained when equipping a fixed character. Starter/Mastery previews are separate from Equip. Journey presents character unlocks while keeping earned XP and existing unlock gates. The clean desktop portrait renderer replaces the old pixel rank frame. [Full Windows notes](RELEASE-WINDOWS-1.2.7.md). Android1.2.6 retains its existing editor/art and unchanged APK.
 
-
 ## Sharper desktop previews (1.2.8)
-
-Above the large portrait, choose HD for original 256-pixel detail or Pixel for crisp blocks. The choice saves automatically, including on fixed characters, and applies to your sidebar portrait. HD avoids enlargement beyond native size; Pixel enlarges only by whole multiples. These display choices do not change equipment, personal colours, XP or unlocks. See the comparison (retired preview/source).
-
 
 ## Madara signature cinematic (Windows1.2.9)
 
 Search for Madara in Characters, select his card and click the portrait or Preview move. Crimson Awakening uses64authored gesture/eye/Susanoo cels over9.4seconds. Play move unlocks with Madara atLevel96; a locked preview never equips or grantsXP. Replay follows completion; Skip or Escape closes it. It uses the crimson outfit without changing equipped mastery gear. Saved HD/Pixel and motion settings apply; hidden/inactive playback pauses, and Off shows a still. [Full notes](RELEASE-WINDOWS-1.2.9.md).
 
-
 ## In-card skills (Windows 1.2.10)
 
 Madara now performs Crimson Awakening inside the portrait card. Click his portrait or Use skill; click Stop or the animated portrait to return to idle. Auto beside HD/Pixel saves automatically and plays once when unlocked Madara is selected or equipped. A selected Madara also activates once when verified progress reaches Level 96. Auto Off keeps manual use available; Animation Off prevents both. Locked manual previews never equip or grant XP. There is no separate movie window. [Full notes](RELEASE-WINDOWS-1.2.10.md).
 
-
 ## Sukuna and quicker skills (Windows 1.2.11)
 
 Sukuna now has Domain Expansion: Malevolent Shrine in the portrait card. Click the portrait or Use skill; Auto follows his existing Level 88 unlock. His 64-cel sequence takes 4.8 seconds. Madara now takes 5.2 seconds instead of 9.4, with the same artwork and controls. Both retain Stop, HD/Pixel and saved motion preferences. A mastery preview returns to its selected outfit after the skill's initial costume. [Details](RELEASE-WINDOWS-1.2.11.md).
-
 
 ## Zoro mastery: Three-Sword Tempest (Windows 1.2.13)
 

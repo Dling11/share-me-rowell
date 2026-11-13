@@ -10,6 +10,4 @@ The same four production art resources are replaced, keeping the explicit 47-ima
 
 **98 Windows checks passed**, including transfer/resume, verified XP/hash receipts, persistence, QR, studio layout, old skill behavior and six revised Zoro cases. New checks cover mastery-only controls and Auto at the existing Level 82 gate, no starter activation, all 96 reachable cels in 2.8 seconds, instant onset/stronger final cut, strict clear body-cell boundaries, HD/Pixel rendering, clipping, stop/switch and locked preview without XP/equipment mutation. Progression fixtures are isolated; owner data is preserved.
 
-The [actual animation](../assets/zoro-skill-1.2.13.gif) has 141 native-renderer frames at 20 ms, including the resting endpoint. See the [card screenshot](../assets/windows-zoro-skill-1.2.13.png) and [saved sources, references and exact prompts](../windows/art-source/ZORO-1.2.13.md). Rendering/timing uses fixtures; focused owner review remains deferred, and physical phone/radio and high-DPI hardware were not retested. The source candidate is ready for GitHub; public downloads and the phone remain unchanged.
-
 Known visual issue accepted for this version: Zoro changes apparent scale when switching between the idle portrait and attack. Matching the idle/attack registration is deferred to the next visual polish pass.

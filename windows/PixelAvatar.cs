@@ -111,7 +111,8 @@ namespace ShareMeRowell {
         public int GearLevel; public bool PortraitOnly;
         public HeroProfile Profile{get{return profile;}set{profile=value.Copy();UpdateClock();Invalidate();}}
         public int Level{get{return level;}set{level=Math.Max(1,Math.Min(100,value));Invalidate();}}
-        public PixelAvatar(){DoubleBuffered=true;Size=new Size(160,160);BackColor=Palette.Card;Cursor=Cursors.Hand;AccessibleName="Pixel adventurer. Click to cheer.";clock.Tick+=(s,e)=>TickPose();Click+=(s,e)=>{if(Animate&&profile.Animations&&!Locked)cheer=8;};}
+        public PixelAvatar(){DoubleBuffered=true;Size=new Size(160,160);BackColor=Palette.Card;Cursor=Cursors.Hand;AccessibleName="Pixel adventurer. Click to cheer.";clock.Tick+=(s,e)=>TickPose();Click+=(s,e)=>Cheer();}
+        public void Cheer(){if(Animate&&!Locked&&PixelMotion.Allowed(profile.Animations,SystemInformation.HighContrast,PixelMotion.SystemAnimationsEnabled,profile.MotionOverride))cheer=8;}
         void UpdateClock(){clock.Enabled=IsHandleCreated&&Visible&&animate&&!locked&&Form.ActiveForm==FindForm()&&PixelMotion.Allowed(profile.Animations,SystemInformation.HighContrast,PixelMotion.SystemAnimationsEnabled,profile.MotionOverride);if(!clock.Enabled&&(pose!=0||hop!=0)){pose=hop=cheer=0;Invalidate();}}
         void OwnerMotion(object sender,EventArgs e){UpdateClock();}
         protected override void OnHandleCreated(EventArgs e){base.OnHandleCreated(e);motionOwner=FindForm();if(motionOwner!=null){motionOwner.Activated+=OwnerMotion;motionOwner.Deactivate+=OwnerMotion;}UpdateClock();}

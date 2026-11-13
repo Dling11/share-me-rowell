@@ -12,7 +12,7 @@ The Courier, Mage, Ranger, Reaper, Warden, Seraph, Sovereign and Silent Ronin ke
 
 ## Art and progress
 
-One transparent, compact sheet contains the three characters' fixed basic/mastery designs and four complete idle cels each. Their heads are part of those authored designs; the generic head/hair compositor is bypassed. Original artwork stays unchanged for customizable avatars. The unchanged generated source and exact built-in prompt are in [the artwork record](../android/art/FIXED-1.2.4.md). Only the 256x384 game-resolution sheet enters application resources, with matching bytes on phone and PC. No engine, emulator, account or additional runtime dependency was introduced.
+One transparent, compact sheet contains the three characters' fixed basic/mastery designs and four complete idle cels each. Their heads are part of those authored designs; the generic head/hair compositor is bypassed. Original artwork stays unchanged for customizable avatars. The unchanged generated source and exact built-in prompt are in the artwork record. Only the 256x384 game-resolution sheet enters application resources, with matching bytes on phone and PC. No engine, emulator, account or additional runtime dependency was introduced.
 
 XP, permanent content receipts, class IDs, level costs, existing unlocks, data locations, Android package/signing, TLS, QR format and transfer approvals are retained. Phone and PC progress remain separate. Older versions may display their older interpretation of these cosmetics; this change introduces no transfer protocol fields.
 

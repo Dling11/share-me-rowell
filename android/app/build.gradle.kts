@@ -5,7 +5,7 @@ android {
     namespace = "com.rowell.shareme"
     compileSdk = 36
     buildToolsVersion = "35.0.0"
-    defaultConfig { applicationId = "com.rowell.shareme"; minSdk = 29; targetSdk = 36; versionCode = 14; versionName = "1.2.6" }
+    defaultConfig { applicationId = "com.rowell.shareme"; minSdk = 29; targetSdk = 36; versionCode = 15; versionName = "1.2.7" }
     signingConfigs {
         create("rowell") {
             storeFile = rootDir.resolve("../.local/signing/shareme.jks")
@@ -34,7 +34,7 @@ dependencies {
     testImplementation("androidx.compose.ui:ui-test-junit4")
 }
 tasks.withType<Test>().configureEach {
-    systemProperty("sharemode.screenshots",rootDir.resolve("../.local/ui-1.2.6").absolutePath)
+    systemProperty("sharemode.screenshots",rootDir.resolve("../.local/ui-1.2.7").absolutePath)
     systemProperty("maven.repo.local",rootDir.resolve("../.local/robolectric-maven").absolutePath)
     systemProperty("robolectric.dependency.repo.url","https://repo.maven.apache.org/maven2")
 }

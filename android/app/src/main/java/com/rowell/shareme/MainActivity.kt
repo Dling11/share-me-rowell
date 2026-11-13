@@ -181,6 +181,7 @@ class MainActivity: ComponentActivity() {
                             CardBox {
                                 Text(if(state.connection.phase==ConnectionPhase.FINISHED)"Transfer complete" else state.connection.phase.label,fontWeight=FontWeight.Bold,color=if(state.connection.phase==ConnectionPhase.FINISHED)Mint else MaterialTheme.colorScheme.onSurface)
                                 Text(state.status,color=Muted,style=MaterialTheme.typography.bodyMedium)
+                                if(state.connection.phase==ConnectionPhase.FINISHED)TransferAvatarShowcase(state)
                                 if(state.connection.phase==ConnectionPhase.FINISHED&&state.earnedXp>0)Text("+${state.earnedXp} XP · Lv. ${state.journey.level} ${state.journey.rank.name}",color=Color(state.journey.rank.colour),style=MaterialTheme.typography.labelLarge)
                                 if(state.connection.phase==ConnectionPhase.FINISHED&&state.earnedXp>0){
                                     val unlocked=Adventure.roles.filter{Adventure.threshold(it.level)>state.journey.xp-state.earnedXp && Adventure.threshold(it.level)<=state.journey.xp}

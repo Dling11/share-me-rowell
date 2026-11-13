@@ -45,3 +45,6 @@ Opening an external support page or sharing files through Android's sharing scre
 Questions or deletion assistance: [Share Mode support](https://github.com/Dling11/share-me-rowell/issues). Do not include private files, pairing codes or passwords in a public issue.
 
 Windows 1.2.2 local candidate adds matching on-device cosmetic profiles and progression. The existing Windows local app-data folder holds appearance settings and a flushed, checksummed ledger of content SHA-256, size and reward. It stores no filenames, paths or peer identities in that ledger. There is no account or phone/PC progress synchronization, and no telemetry or new network service was introduced for avatars. The existing local installer endpoint and transfer listener keep their original purposes.
+
+
+Paired transfers may also exchange your selected avatar settings and display level over the existing encrypted connection, including QR-paired transfers. These are optional cosmetics used in the transfer view; the private XP ledger stays on your device.

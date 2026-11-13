@@ -16,6 +16,4 @@ Local installation cleanup archives old review/source folders, old ZIPs and the 
 
 Review GIFs use 50 ms frame timing: 105 frames for Madara and 97 for Sukuna, including a final resting frame. Screenshots and playback-state tests use isolated profiles and deterministic time. No owner focus was forced; deferred live visual review, phone/radio and high-DPI hardware testing remain separate. Transfer core, existing XP receipts/identity/history, old artwork and Android runtime/build/APK are preserved.
 
-See the [Sukuna preview](../assets/windows-sukuna-skill-1.2.11.png), [Domain Expansion animation](../assets/sukuna-skill-1.2.11.gif), [faster Madara](../assets/madara-skill-1.2.11.gif), and [source art with exact prompts](../windows/art-source/SUKUNA-1.2.11.md). These previews remain in the source project and are not installed runtime files.
-
 This is a local PC update. No GitHub push, public release, website change or phone installation is included.

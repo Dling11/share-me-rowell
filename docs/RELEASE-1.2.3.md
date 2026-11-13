@@ -24,8 +24,6 @@ Both Boy/Girl body variants are available. Equipping a new class applies its sig
 
 Android package/signing identity, data paths, QR scheme, TLS, approvals and v1 transfer messages remain unchanged. New discovery metadata uses optional `hero` and `mood` fields while keeping the old `role` and five-part avatar fields readable by older peers. Older apps display a basic fallback appearance. New app versions display the new characters and focused mood. No discovery metadata authorizes a transfer.
 
-Original full-resolution art, exact built-in generation prompts and resource compilation notes are in [the art revision record](../android/art/PIXEL-1.2.3.md). Only small game-resolution atlases are embedded in the applications. Rendered lineup and motion previews use sample profiles; they do not grant progress to a real installation.
-
 Validation and final artifact metadata are recorded privately under `.local/verification-1.2.3.json`. Device installation and physical-transfer coverage must be reported separately from local rendering/tests. Owner visual and motion approval remains separate from automated checks.
 
 ## Final local validation

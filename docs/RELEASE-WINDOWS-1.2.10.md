@@ -15,6 +15,4 @@ The existing 64 cels and 9.4-second sequence are reused. No new art, engine or d
 
 Playback time is tested deterministically through the same state machine used by the UI timer. Native card screenshots and the 95-frame review GIF use fixture time; no window focus was forced. The owner's deferred live focused-window review remains separate. Phone/radio and high-DPI hardware were not retested. Existing identity, history, XP receipts and appearance are preserved; Android runtime/build/APK, transfer core and original artwork remain unchanged.
 
-See the actual preview card (retired preview/source) and in-card animation (retired preview/source). Original sources and generation prompts remain in the [1.2.9 art record](../windows/art-source/MADARA-1.2.9.md).
-
 This update is installed locally on PC. GitHub releases and website downloads have not been changed.

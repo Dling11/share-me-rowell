@@ -89,10 +89,11 @@ class Transport(private val context:Context) : Closeable {
             synchronized(guard){if(claimed){Wire.write(output,reject("This device is busy."));return};claimed=true;owner=true}
             socket.soTimeout=600000
             val peer=profileName(request.optString("name","Nearby device"))
-            val avatar=if(nearby)runCatching{NearbyProtocol.parseAvatar(request.optString("avatar"),request.optional("look"),request.optional("role"),request.optional("element"),request.optional("hairTone"),request.optional("hero"),request.optional("mood"),request.optional("guest"),request.optional("collect"))}.getOrNull() else null
-            val peerLevel=if(nearby)runCatching{NearbyProtocol.parseLevel(request.optional("level"))}.getOrDefault(1)else 1
+            val appearance=PeerAppearance.parse(request)
+            val avatar=appearance?.avatar?:if(nearby)runCatching{NearbyProtocol.parseAvatar(request.optString("avatar"),request.optional("look"),request.optional("role"),request.optional("element"),request.optional("hairTone"),request.optional("hero"),request.optional("mood"),request.optional("guest"),request.optional("collect"))}.getOrNull() else null
+            val peerLevel=appearance?.level?:if(nearby)runCatching{NearbyProtocol.parseLevel(request.optional("level"))}.getOrDefault(1)else 1
             val comparison=if(nearby)NearbyProtocol.transferCode(pair.fingerprint,request.optString("nonce")) else ""
-            state{it.copy(connection=PeerConnection.begin(peer,ConnectionPhase.APPROVAL),current="",currentUri="",done=0,total=0,earnedXp=0)}
+            state{it.copy(connection=PeerConnection.begin(peer,ConnectionPhase.APPROVAL),peerAppearance=avatar?.let{PeerAppearance(it,peerLevel)},current="",currentUri="",done=0,total=0,earnedXp=0)}
             if(nearby){
                 // Bind human verification to this TLS certificate AND this client's fresh nonce.
                 // No selected filenames are disclosed until the sender confirms this code.
@@ -112,8 +113,8 @@ class Transport(private val context:Context) : Closeable {
                 }
                 receive(input,output,files)
             }else if(op=="pull"&&pair.mode=="send"){
-                if(!approve(peer,sources.map{it.meta},true)){phase(ConnectionPhase.DECLINED);status("Transfer declined.");Wire.write(output,reject("Transfer declined."));return}
-                Wire.write(output,JSONObject().put("ok",true).put("sender",Model.deviceName).put("files",JSONArray(sources.map{it.meta.json()})))
+                if(!approve(peer,sources.map{it.meta},true,avatar=avatar,level=peerLevel)){phase(ConnectionPhase.DECLINED);status("Transfer declined.");Wire.write(output,reject("Transfer declined."));return}
+                Wire.write(output,JSONObject().put("ok",true).put("sender",Model.deviceName).put("files",JSONArray(sources.map{it.meta.json()})).withAppearance())
                 phase(ConnectionPhase.WAITING);val response=Wire.read(input);Wire.success(response);send(input,output,sources,response.getJSONArray("offsets"))
             }else{phase(ConnectionPhase.FAILED);Wire.write(output,reject("Choose Send on one device and Receive on the other."))}
         }catch(e:Exception){if(!stopped&&owner){phase(if(e.message.orEmpty().contains("declined",true))ConnectionPhase.DECLINED else ConnectionPhase.FAILED);status(e.message?:"Connection interrupted. Scan again to resume.")}}
@@ -126,7 +127,7 @@ class Transport(private val context:Context) : Closeable {
             var socket:SSLSocket?=null
             var rawClient:Socket?=null
             try{
-                state{it.copy(busy=true,status="Connecting to ${pair.name}…",connection=PeerConnection.begin(pair.name),current="",currentUri="",done=0,total=0)}
+                state{it.copy(busy=true,status="Connecting to ${pair.name}…",connection=PeerConnection.begin(pair.name),peerAppearance=nearbyPeer?.let{PeerAppearance(it.avatar,it.level)},current="",currentUri="",done=0,total=0)}
                 val trust=object:X509TrustManager {
                     override fun getAcceptedIssuers():Array<X509Certificate> = emptyArray()
                     override fun checkClientTrusted(chain:Array<X509Certificate>,authType:String):Unit = throw java.security.cert.CertificateException("Client certificates are not used.")
@@ -159,14 +160,14 @@ class Transport(private val context:Context) : Closeable {
                         }
                         phase(ConnectionPhase.WAITING)
                     }
-                    Wire.write(output,JSONObject().put("v",1).put("op","push").put("code",pair.code).put("name",Model.deviceName).put("files",JSONArray(files.map{it.meta.json()})))
+                    Wire.write(output,JSONObject().put("v",1).put("op","push").put("code",pair.code).put("name",Model.deviceName).put("files",JSONArray(files.map{it.meta.json()})).withAppearance())
                     status("Waiting for approval on ${pair.name}…")
-                    val response=Wire.read(input);Wire.success(response);send(input,output,files,response.getJSONArray("offsets"))
+                    val response=Wire.read(input);Wire.success(response);PeerAppearance.parse(response)?.let{appearance->state{it.copy(peerAppearance=appearance)}};send(input,output,files,response.getJSONArray("offsets"))
                 }else{
-                    Wire.write(output,JSONObject().put("v",1).put("op","pull").put("code",pair.code).put("name",Model.deviceName))
+                    Wire.write(output,JSONObject().put("v",1).put("op","pull").put("code",pair.code).put("name",Model.deviceName).withAppearance())
                     status("Waiting for ${pair.name}…")
-                    val offer=Wire.read(input);Wire.success(offer);val incoming=Wire.files(offer)
-                    if(!approve(pair.name,incoming,false)){phase(ConnectionPhase.DECLINED);status("Transfer declined.");Wire.write(output,reject("Transfer declined."));return@execute}
+                    val offer=Wire.read(input);Wire.success(offer);PeerAppearance.parse(offer)?.let{appearance->state{it.copy(peerAppearance=appearance)}};val incoming=Wire.files(offer)
+                    if(!approve(pair.name,incoming,false,avatar=Model.value.peerAppearance?.avatar,level=Model.value.peerAppearance?.level?:1)){phase(ConnectionPhase.DECLINED);status("Transfer declined.");Wire.write(output,reject("Transfer declined."));return@execute}
                     receive(input,output,incoming)
                 }
             }catch(e:Exception){if(!stopped){phase(if(e.message.orEmpty().contains("declined",true))ConnectionPhase.DECLINED else ConnectionPhase.FAILED);status(ConnectionProblem.describe(e,pair.hosts.firstOrNull().orEmpty(),sameSubnet))}}
@@ -194,7 +195,7 @@ class Transport(private val context:Context) : Closeable {
     private fun receive(input:InputStream,output:OutputStream,files:List<FileMeta>){
         val used=mutableSetOf<String>()
         val offsets=files.map{store.offset(it,used.add(it.sha+it.size))}
-        Wire.write(output,JSONObject().put("ok",true).put("offsets",JSONArray(offsets)))
+        Wire.write(output,JSONObject().put("ok",true).put("offsets",JSONArray(offsets)).withAppearance())
         files.forEachIndexed{index,file->
             state{it.copy(busy=true,current=file.name,currentUri="",status="Receiving file ${index+1} of ${files.size}…",done=offsets[index],total=file.size,fileIndex=index+1,fileCount=files.size,resumedFrom=offsets[index],connection=it.connection.advance(ConnectionPhase.RECEIVING))}
             var updated=0L

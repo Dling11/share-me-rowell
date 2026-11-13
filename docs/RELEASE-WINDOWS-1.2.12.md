@@ -14,6 +14,4 @@ Only four new production PNG atlases are bundled. The explicit image allowlist n
 
 The review GIF contains 181 native-renderer frames at 20 ms each, including the resting endpoint. Screenshots and timing tests use isolated profiles and deterministic time. No owner focus was forced; the previously deferred live visual review, physical phone/radio and high-DPI hardware checks remain separate. Transfer/resume, identity/history/XP receipts, old artwork and phone runtime/build/APK are preserved.
 
-See the actual card (retired preview/source), animation (retired preview/source) and [saved art with exact prompts](../windows/art-source/ZORO-1.2.12.md). These previews are source-project artifacts and are not installed runtime files.
-
 This is a local PC update. No GitHub push, public release, website update or phone installation is included.

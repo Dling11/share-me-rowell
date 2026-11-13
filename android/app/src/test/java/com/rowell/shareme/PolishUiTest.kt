@@ -25,6 +25,21 @@ class PolishUiTest {
     @get:Rule val compose=createAndroidComposeRule<MainActivity>()
     private val profile=ShareProfile("12345678-abcd","Rowell",AvatarStyle(4,1,0,0,1))
     @Before fun reset(){compose.runOnIdle{val existingId=ProfileStore.load(compose.activity).id;Model.set{ScreenState(profile=profile.copy(id=existingId),uiVisible=true,avatarAnimations=false)}}}
+    @Test fun transferShowsBothAvatarsAboveTheFileListWithoutChangingProgress(){
+        compose.runOnIdle{Model.set{it.copy(busy=true,mode="send",connection=PeerConnection("Nearby phone",ConnectionPhase.SENDING),current="holiday-photo.jpg",done=262144,total=1048576,fileIndex=1,fileCount=2,peerAppearance=PeerAppearance(AvatarStyle(role=13),82))}}
+        compose.onNodeWithText("holiday-photo.jpg").assertIsDisplayed()
+        compose.onNodeWithContentDescription("You avatar. Tap to animate.").assertIsDisplayed().performClick()
+        compose.onNodeWithContentDescription("Nearby phone avatar. Tap to animate.").assertIsDisplayed().performClick()
+        compose.runOnIdle{assertEquals(0,Model.value.journey.xp);assertEquals(0,Model.value.profile.avatar.role);assertTrue(Model.value.busy);assertEquals(262144,Model.value.done)}
+        capture("transfer-avatars")
+    }
+    @Test fun transferFromAnOlderPeerKeepsItsNameAndUsesADevicePlaceholder(){
+        compose.runOnIdle{Model.set{it.copy(busy=true,mode="receive",connection=PeerConnection("Older PC",ConnectionPhase.RECEIVING),current="notes.txt",done=1,total=5)}}
+        compose.onAllNodesWithText("Older PC")[0].assertIsDisplayed()
+        compose.onNodeWithText("Device avatar unavailable").assertIsDisplayed()
+        compose.onNodeWithContentDescription("You avatar. Tap to animate.").assertIsDisplayed()
+        capture("transfer-legacy-peer")
+    }
     @Test fun signatureCharacterHidesCustomizationAndCanSwitchBack(){
         compose.runOnIdle{
             Model.set{it.copy(journey=AdventurerJourney(Adventure.threshold(100)))}

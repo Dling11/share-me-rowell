@@ -15,6 +15,4 @@ Original art, fixed-character designs, personal customization, XP receipts, unlo
 
 Actual QR images decode at the normal and minimum window sizes, with expanded network options and long Unicode names. Tests use isolated profiles. Android runtime files, build configuration, APK and Windows transfer core are checked against the prior baseline. Physical radio tests, high-DPI hardware and the owner's deferred focused-window idle review were not repeated.
 
-See the before / HD / Pixel comparison (retired preview/source), HD studio (retired preview/source) and Pixel studio (retired preview/source).
-
 This is a local Windows update. GitHub releases, public packages and website downloads have not been changed.

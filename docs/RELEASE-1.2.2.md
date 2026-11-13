@@ -19,8 +19,6 @@ Hair, skin, expressions, Boy/Girl looks and outfit/element colours remain free a
 
 The existing increasingly expensive level curve remains: level 45 requires 332,992 XP and level 100 requires 3,302,937 XP. A new player needs at least **66,059 unique maximum-reward files** to reach 100 under the new reward rate. Progress remains device-local and cosmetic; it is not a competitive or tamper-proof score.
 
-[Level 1–100 gear gallery](../assets/android-gear-progression.png) · [Actual app idle comparison](../assets/android-pixel-idle.gif) · [Artwork sources and generation prompts](../android/art/README.md)
-
 ## Size and validation
 
 The signed APK is **2,836,298 bytes (about 2.84 MB)**, 67,804 bytes larger than 1.2.1. The extra progression art is compiled to a 67,642-byte atlas. Full-resolution art stays outside the APK; no runtime dependency, game engine or permission was added. Existing head/hair artwork is unchanged.

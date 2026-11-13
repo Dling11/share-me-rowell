@@ -39,10 +39,10 @@ async function connection(info){
   return {socket,reader:new Reader(socket)};
 }
 function line(socket,value){socket.write(JSON.stringify(value)+'\n');}
-async function push(info,name,data,{code=info.code,claimedHash=hash(data)}={}){
+async function push(info,name,data,{code=info.code,claimedHash=hash(data),appearance,level,onReady=()=>{}}={}){
   const {socket,reader}=await connection(info);
-  line(socket,{v:1,op:'push',code,name:'Protocol test',files:[{id:crypto.randomUUID(),name,size:data.length,sha256:claimedHash}]});
-  const accepted=await reader.line();if(!accepted.ok){socket.destroy();return accepted;}
+  line(socket,{v:1,op:'push',code,name:'Protocol test',appearance,level,files:[{id:crypto.randomUUID(),name,size:data.length,sha256:claimedHash}]});
+  const accepted=await reader.line();onReady(accepted);if(!accepted.ok){socket.destroy();return accepted;}
   socket.write(data.subarray(accepted.offsets[0]));
   const ack=await reader.line();socket.end();await pause(100);return ack;
 }
@@ -53,9 +53,10 @@ try{
   const download=await fetch(receiver.installerUrl+'/app.apk');assert.equal(download.status,200);assert.equal(download.headers.get('content-type'),'application/vnd.android.package-archive');assert.equal(Buffer.from(await download.arrayBuffer()).toString(),'Dummy APK bootstrap fixture');passed.push('local APK page and exact installer bytes');
   for(const suffix of ['/wrong-token','/../server.json','/../test-installer.apk']){const result=await fetch(new URL(suffix,receiver.installerUrl));assert.equal(result.status,404);}passed.push('installer endpoint only serves token-scoped public APK');
   const data=crypto.randomBytes(1024*1024+13);
-  assert.equal((await push(receiver,'test.iso',data)).ok,true);
+  assert.equal((await push(receiver,'test.iso',data,{appearance:'5.4.5.4.3.1.13.5',level:82,onReady:ready=>{assert.match(ready.appearance,/^([0-9]+\.){7}[0-9]+$/);assert.equal(ready.level,1)}})).ok,true);
   assert.equal(hash(await fs.readFile(path.join(receiver.folder,'received','test.iso'))),hash(data));passed.push('binary-ISO round trip and checksum');
   let status=await card(receiver,'Finished');assert.equal(status.peer,'Protocol test');assert.equal(status.active,false);assert.match(status.label,/disconnected/i);passed.push('finished device card retains peer without claiming connection');
+  assert.equal(status.appearance,'5.4.5.4.3.1.13.5');assert.equal(status.level,82);assert.equal((await journey(receiver,4)).level,1);passed.push('Authenticated optional avatars survive progress and completion without changing local XP or transfer bytes');
   assert.equal((await push(receiver,'empty.txt',Buffer.alloc(0))).ok,true);
   assert.equal((await fs.stat(path.join(receiver.folder,'received','empty.txt'))).size,0);passed.push('empty file');
   assert.equal((await push(receiver,'denied.txt',data,{code:'wrong-code'})).ok,false);

@@ -119,32 +119,33 @@ Windows passes18core/render/persistence,23loopback,10UI and8signatureUI checks p
 
 68 checks pass:18core,23loopback transfer,10UI,8signatureUI/save/restart and9studio. The studio suite checks48 complete default appearance cels, independent colours including both hands,18fixed portrait invariance, separate fantasy mastery artwork, search/filter/locked previews, custom-scrollbar wheel/drag/keyboard/limits, default+minimum layout and autosave restart. QR decoding passes at default/minimum outer sizes and with expanded networks plus24 Unicode characters in a device name. Tests use isolated profiles only. Phone runtime/source/build/APK and Windows TransferCore hashes are compared against the pre-redesign baseline. No native phone, focused-window idle or high-DPI hardware claim is made by these off-screen checks. Local reports: .local/studio-checks.json, .local/phone-unchanged-1.2.7.json and .local/verification-1.2.7.json.
 
-
 ## Windows1.2.8 portrait clarity
 
 74Windows checks pass: the existing68 plus6portrait-sharpness checks. Run scripts/check-portrait-sharpness.ps1 after building Windows. It compares all18fixed portraits with the embedded256-pixel cells at native/larger bounds (allowing GDI alpha rounding), verifies exact2x2Pixel blocks on personal/fixed portraits, checks integer-only default breathing, exercises cache eviction, checks default/minimum selector layout and restarts HD/Pixel preferences without XP/equipment changes. Proof .local/portrait-checks.json; source/native preview comparison assets/windows-portrait-comparison-1.2.8.png. Existing QR/transfer/resume and appearance suites pass. No Android rebuild or physical phone/focused-window idle/high-DPI hardware claim is included.
-
 
 ## Windows1.2.9 Madara cinematic
 
 80Windows checks pass: existing74plus6cinematic cases. check-madara-cinematic.ps1 validates64reachable cels, bounded9.4second playback phases, rest/end state, motion/accessibility/background guards, alpha art, distinct native HD/Pixel scenes and fixed appearance, actual locked preview/close and Off persistence with noXP/equip change. It exports95native review frames; encode-madara-review.ps1 checks9500ms GIF timing and looping. Focused timer/replay was not exercised because the offscreen fixture did not become active; no focus was forced, and the owner's deferred live animation review remains deferred. Existing transfer/resume/QR suites pass. Phone/source/APK/TransferCore baseline comparisons remain required. Reports .local/madara-checks.json, .local/madara-gif-check.json and .local/verification-1.2.9.json.
 
-
 ## Windows 1.2.10 in-card skills
 
 86 checks pass: the existing 80, with popup UI cases updated for in-card Off/Auto behavior, plus six inline-skill cases. These verify monotonic active-time/paused/finished/replay state, the Level 96 Auto gate and legacy profile defaults, actual same-slot activation without another Form, portrait clicks and stop, character switching, default/minimum controls, persistence and a labelled isolated fixture crossing Level 95 to 96 with one verified XP award. HD/Pixel changes do not restart playback; routine XP refreshes do not auto-replay. Native screenshots/GIF use deterministic fixture time and no forced focus. Owner data and deferred live visual review remain separate. Reports: .local/inline-skill-checks.json, .local/inline-gif-check.json and .local/verification-1.2.10.json.
-
 
 ## Windows 1.2.11 Sukuna, faster timing and resource allowlist
 
 92 Windows checks pass: the prior 86 plus six Sukuna cases. Existing Madara and inline tests now verify 5.2-second playback; the domain suite verifies all 64 cels and its 4.8-second duration, alpha/native resolution, fixed style, distinct scene phases, actual no-popup controls, size bounds, switching characters, Off and the original Level 88 Auto gate using an isolated 87-to-88 one-XP fixture. Reflection confirms exactly 43 embedded production images and no source/review files. Exported GIF timing is independently decoded at 50 ms per frame. Source/runtime PNGs, transfer core and phone hashes are compared before delivery. Runtime cleanup uses a full installation backup, a reviewed path plan, post-install launch/listener/APK checks and unchanged owner profile/XP/identity/history. No focus or physical-radio test is inferred from simulated playback captures.
 
-
 ## Windows 1.2.12 Zoro sword skill
 
 98 Windows checks pass: prior 92 plus six Zoro cases. Tests cover 96 reachable cels, no zoom/face cut-in, three cut impacts and 3.6-second end state; complete silhouettes/native resolution without clipped blade bands; 47 actual embedded images with no source/review art; deterministic HD/Pixel phase/fixed-style comparisons; screen-cut clipping; real same-card controls, stop/switch/default/minimum layout; isolated Level 27-to-28 Auto and persistence; motion Off and Zoro-only 25 ms timing. A single near-black border antialias sample is tolerated after targeted source-tip cleanup. Other skill timers remain 33 ms. Review timing is independently decoded at 181 frames / 3620 ms. Live focused visual, phone/radio and high-DPI hardware review remains separate; fixture data never edits owner progress.
 
-
 ## Windows 1.2.13 Zoro mastery accuracy and instant finisher
 
 98 Windows checks pass. Revised Zoro cases reach all 96 cels in 2.8 seconds, enforce no zoom and 20ms cut onset/stronger final split, require zero opaque contacts on body-cell edges, check HD/Pixel phase rendering and preview clipping, and exercise the actual Mastery-only controls with Starter rejection. An isolated 81-to-82 verified one-XP fixture verifies the original mastery Auto gate, repeat prevention and saved Auto; starter Level 28 is unchanged. Review GIF independently decodes to 141 frames at 20ms, 2820ms including the resting endpoint. Weapon identity/count and mouth-hilt placement were visually inspected; automated tests do not recognize semantic sword count. Other suites cover transfer/resume, XP/hash/receipts, persistence, QR, layouts and previous skills. Live owner focus, physical phone/radio and high-DPI hardware remain separate.
+
+
+## Windows 1.2.14 / Android 1.2.7 transfer avatars
+
+104 Windows checks pass: 18 core, 24 loopback transfer, 10 UI, 8 fixed-character, 9 studio, 6 portrait, 6 Madara, 6 inline, 6 Sukuna, 6 Zoro and 5 transfer-showcase cases. The new cases cover optional bounded cosmetics, older-peer fallback, phase retention, independent in-frame taps, motion Off, sender-left/receiver-right layout and unchanged local progress. Expanded/default/minimum QR decoding remains checked. The optional historical comparison skips retired backup files while retaining all six portrait regressions.
+
+104 Android unit/UI tests pass with zero failures/errors/skips and zero release-lint errors. Added cases check appearance round trips without changing transfer fields, malformed/older metadata, bounded cosmetic levels, both tap targets, readable filenames and older-peer placeholders. APK/AAB signing identity is verified separately. No physical two-phone radio or focused owner animation retest is claimed.
